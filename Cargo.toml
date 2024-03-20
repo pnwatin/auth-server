@@ -10,4 +10,9 @@ edition = "2021"
 tokio = { version = "1", features = ["full"] }
 
 # http
-axum = { version = "0.7.4" }
+axum = { version = "0.7.4", features = ["tracing"] }
+tower-http = { version = "0.5", features = ["trace"] }
+
+# tracing
+tracing = { version = "0.1" }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
