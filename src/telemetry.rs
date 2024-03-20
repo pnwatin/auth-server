@@ -1,5 +1,9 @@
 use tracing::{subscriber::set_global_default, Subscriber};
-use tracing_subscriber::{fmt::MakeWriter, layer::SubscriberExt, EnvFilter, Registry};
+use tracing_subscriber::{
+    fmt::{format::FmtSpan, MakeWriter},
+    layer::SubscriberExt,
+    EnvFilter, Registry,
+};
 
 pub fn get_subscriber<Writer>(
     env_filter: EnvFilter,
@@ -10,7 +14,10 @@ where
 {
     let env_filter = EnvFilter::try_from_default_env().unwrap_or(env_filter);
 
-    let formatting_layer = tracing_subscriber::fmt::Layer::default().with_writer(writer);
+    let formatting_layer = tracing_subscriber::fmt::Layer::default()
+        .with_writer(writer)
+        .with_target(false)
+        .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE);
 
     Registry::default().with(env_filter).with(formatting_layer)
 }
