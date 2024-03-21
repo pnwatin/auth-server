@@ -6,7 +6,7 @@ use tower_http::{
 };
 use tracing::Level;
 
-use crate::routes;
+use crate::handlers;
 
 pub struct Application {
     app: Router,
@@ -32,7 +32,7 @@ impl Application {
             .on_failure(DefaultOnFailure::new().level(Level::ERROR));
 
         let app = Router::new()
-            .route("/_health-check", get(routes::health_check_handler))
+            .route("/_health-check", get(handlers::health_check_handler))
             .layer(tracing_layer);
 
         Ok(Self { app, listener })
