@@ -1,4 +1,5 @@
 use matoscout_api::{
+    settings::get_settings,
     startup::Application,
     telemetry::{get_subscriber, init_subscriber},
 };
@@ -9,7 +10,9 @@ async fn main() -> std::io::Result<()> {
     let subscriber = get_subscriber(EnvFilter::new("trace"), std::io::stdout);
     init_subscriber(subscriber);
 
-    let application = Application::build().await?;
+    let settings = get_settings().expect("Failed to get configuration.");
+
+    let application = Application::build(settings).await?;
 
     application.run_until_stopped().await?;
 

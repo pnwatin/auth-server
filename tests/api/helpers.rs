@@ -1,9 +1,11 @@
 use matoscout_api::{
+    settings::get_settings,
     startup::Application,
     telemetry::{get_subscriber, init_subscriber},
 };
 use once_cell::sync::Lazy;
 use tracing_subscriber::EnvFilter;
+use uuid::Uuid;
 
 static TRACING: Lazy<()> = Lazy::new(|| {
     let env_filter = EnvFilter::new("trace");
@@ -25,7 +27,15 @@ impl TestApplication {
     pub async fn spawn() -> Self {
         Lazy::force(&TRACING);
 
-        let application = Application::build()
+        let settings = {
+            let mut settings = get_settings().expect("Failed to get configuration.");
+
+            settings.database.database_name = Uuid::new_v4().to_string();
+
+            settings
+        };
+
+        let application = Application::build(settings)
             .await
             .expect("Failed to build application.");
 

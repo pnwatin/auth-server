@@ -1,4 +1,5 @@
-use axum::{routing::get, Router};
+use axum::{routing::get, Extension, Router};
+use sqlx::{postgres::PgPoolOptions, PgPool};
 use tokio::net::TcpListener;
 use tower_http::{
     trace::{DefaultMakeSpan, DefaultOnFailure, DefaultOnResponse, TraceLayer},
@@ -6,7 +7,10 @@ use tower_http::{
 };
 use tracing::Level;
 
-use crate::handlers;
+use crate::{
+    handlers,
+    settings::{DatabaseSettings, Settings},
+};
 
 pub struct Application {
     app: Router,
@@ -14,7 +18,9 @@ pub struct Application {
 }
 
 impl Application {
-    pub async fn build() -> Result<Self, std::io::Error> {
+    pub async fn build(settings: Settings) -> Result<Self, std::io::Error> {
+        let connection_pool = get_connection_pool(&settings.database);
+
         let listener = TcpListener::bind("127.0.0.1:3000").await?;
 
         let tracing_layer = TraceLayer::new_for_http()
@@ -33,7 +39,8 @@ impl Application {
 
         let app = Router::new()
             .route("/_health-check", get(handlers::health_check_handler))
-            .layer(tracing_layer);
+            .layer(tracing_layer)
+            .layer(Extension(connection_pool));
 
         Ok(Self { app, listener })
     }
@@ -43,4 +50,10 @@ impl Application {
 
         axum::serve(self.listener, self.app.into_make_service()).await
     }
+}
+
+pub fn get_connection_pool(settings: &DatabaseSettings) -> PgPool {
+    PgPoolOptions::new()
+        .acquire_timeout(std::time::Duration::from_secs(2))
+        .connect_lazy_with(settings.with_database())
 }
