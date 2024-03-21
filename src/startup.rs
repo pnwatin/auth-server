@@ -1,10 +1,12 @@
-use axum::Router;
+use axum::{routing::get, Router};
 use tokio::net::TcpListener;
 use tower_http::{
     trace::{DefaultMakeSpan, DefaultOnFailure, DefaultOnResponse, TraceLayer},
     LatencyUnit,
 };
 use tracing::Level;
+
+use crate::routes;
 
 pub struct Application {
     app: Router,
@@ -25,11 +27,13 @@ impl Application {
                 DefaultOnResponse::new()
                     .include_headers(true)
                     .level(Level::INFO)
-                    .latency_unit(LatencyUnit::Micros),
+                    .latency_unit(LatencyUnit::Millis),
             )
             .on_failure(DefaultOnFailure::new().level(Level::ERROR));
 
-        let app = Router::new().layer(tracing_layer);
+        let app = Router::new()
+            .route("/_health-check", get(routes::health_check_handler))
+            .layer(tracing_layer);
 
         Ok(Self { app, listener })
     }

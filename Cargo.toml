@@ -4,6 +4,13 @@ version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+path = "src/main.rs"
+name = "zerotoprod"
+
 
 [dependencies]
 # tokio
@@ -16,3 +23,7 @@ tower-http = { version = "0.5", features = ["trace"] }
 # tracing
 tracing = { version = "0.1" }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[dev-dependencies]
+once_cell = { version = "1.19" }
+reqwest = { version = "0.12" }
