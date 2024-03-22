@@ -1,3 +1,5 @@
+use anyhow::Context;
+use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
 use axum::{http::StatusCode, response::IntoResponse, Extension, Json};
 use secrecy::{ExposeSecret, Secret};
 use serde::Deserialize;
@@ -11,16 +13,31 @@ pub async fn sign_up_handler(
     Extension(pool): Extension<PgPool>,
     Json(payload): Json<SignUpPayload>,
 ) -> Result<(), SignUpError> {
-    let _user_id = insert_user(&payload, &pool).await.map_err(|e| match e {
-        sqlx::Error::Database(err) if err.is_unique_violation() => SignUpError::EmailTaken,
-        _ => SignUpError::UnexpectedError(e.into()),
-    })?;
+    let password_salt = SaltString::generate(rand::thread_rng());
+    let password_hash = Secret::new(
+        Argon2::default()
+            .hash_password(payload.password.expose_secret().as_bytes(), &password_salt)
+            .with_context(|| "Failed to hash password.")
+            .map_err(SignUpError::UnexpectedError)?
+            .to_string(),
+    );
+
+    let _user_id = insert_user(&payload.email, password_hash, &pool)
+        .await
+        .map_err(|e| match e {
+            sqlx::Error::Database(err) if err.is_unique_violation() => SignUpError::EmailTaken,
+            _ => SignUpError::UnexpectedError(e.into()),
+        })?;
 
     Ok(())
 }
 
-#[tracing::instrument(name = "INSERT NEW USER", skip(user, pool))]
-async fn insert_user(user: &SignUpPayload, pool: &PgPool) -> Result<Uuid, sqlx::Error> {
+#[tracing::instrument(name = "INSERT NEW USER", skip(email, password_hash, pool))]
+async fn insert_user(
+    email: &Email,
+    password_hash: Secret<String>,
+    pool: &PgPool,
+) -> Result<Uuid, sqlx::Error> {
     let user_id = Uuid::new_v4();
 
     sqlx::query!(
@@ -29,8 +46,8 @@ async fn insert_user(user: &SignUpPayload, pool: &PgPool) -> Result<Uuid, sqlx::
             VALUES ($1, $2, $3);
         "#,
         user_id,
-        user.email.as_ref(),
-        user.password.expose_secret()
+        email.as_ref(),
+        password_hash.expose_secret()
     )
     .execute(pool)
     .await

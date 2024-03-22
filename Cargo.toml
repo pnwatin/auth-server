@@ -40,6 +40,9 @@ tracing = { version = "0.1" }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-log = { version = "0.2" }
 
+# crypto
+argon2 = { version = "0.5.3", features = ["std"] }
+
 # validations
 validator = { version = "0.17" }
 
@@ -51,6 +54,7 @@ anyhow = { version = "1" }
 config = { version = "0.14" }
 secrecy = { version = "0.8", features = ["serde"] }
 uuid = { version = "1.8", features = ["v4"] }
+rand = { version = "0.8.5", features = ["std_rng"] }
 
 [dev-dependencies]
 once_cell = { version = "1.19" }
