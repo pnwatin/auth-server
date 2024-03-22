@@ -39,6 +39,7 @@ impl Application {
 
         let app = Router::new()
             .route("/_health-check", get(handlers::health_check_handler))
+            .nest("/auth", handlers::auth_router())
             .layer(tracing_layer)
             .layer(Extension(connection_pool));
 
