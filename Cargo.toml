@@ -35,6 +35,12 @@ tracing = { version = "0.1" }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-log = { version = "0.2" }
 
+# validations
+validator = { version = "0.17" }
+
+# errors
+thiserror = { version = "1" }
+
 # utils
 config = { version = "0.14" }
 secrecy = { version = "0.8", features = ["serde"] }
@@ -43,3 +49,7 @@ uuid = { version = "1.8", features = ["v4"] }
 [dev-dependencies]
 once_cell = { version = "1.19" }
 reqwest = { version = "0.12" }
+claim = { version = "0.5" }
+fake = { version = "2.9.2" }
+quickcheck = { version = "1.0.3" }
+quickcheck_macros = { version = "1" }
