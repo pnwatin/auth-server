@@ -3,9 +3,11 @@ use std::net::SocketAddr;
 use axum::{routing::get, Extension, Router};
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use tokio::net::TcpListener;
+use tower::ServiceBuilder;
 use tower_http::{
+    request_id::MakeRequestUuid,
     trace::{DefaultMakeSpan, DefaultOnFailure, DefaultOnResponse, TraceLayer},
-    LatencyUnit,
+    LatencyUnit, ServiceBuilderExt,
 };
 use tracing::Level;
 
@@ -44,10 +46,15 @@ impl Application {
             )
             .on_failure(DefaultOnFailure::new().level(Level::ERROR));
 
+        let middleware = ServiceBuilder::new()
+            .set_x_request_id(MakeRequestUuid)
+            .layer(tracing_layer)
+            .propagate_x_request_id();
+
         let app = Router::new()
             .route("/_health-check", get(handlers::health_check_handler))
             .nest("/auth", handlers::auth_router())
-            .layer(tracing_layer)
+            .layer(middleware)
             .layer(Extension(connection_pool));
 
         Ok(Self { app, listener })

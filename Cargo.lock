@@ -1086,6 +1086,7 @@ dependencies = [
  "sqlx",
  "thiserror",
  "tokio",
+ "tower",
  "tower-http",
  "tracing",
  "tracing-log",
@@ -2536,9 +2537,11 @@ dependencies = [
  "http-body",
  "http-body-util",
  "pin-project-lite",
+ "tower",
  "tower-layer",
  "tower-service",
  "tracing",
+ "uuid",
 ]
 
 [[package]]
