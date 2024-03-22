@@ -31,6 +31,7 @@ sqlx = { version = "0.7.4", features = [
 serde = { version = "1", features = ["derive"] }
 serde_with = { version = "3.7" }
 serde-aux = { version = "4.5"}
+serde_json = { version = "1"}
 
 # tracing
 tracing = { version = "0.1" }
@@ -50,7 +51,7 @@ uuid = { version = "1.8", features = ["v4"] }
 
 [dev-dependencies]
 once_cell = { version = "1.19" }
-reqwest = { version = "0.12" }
+reqwest = { version = "0.12", features = ["json"]}
 claim = { version = "0.5" }
 fake = { version = "2.9.2" }
 quickcheck = { version = "1.0.3" }

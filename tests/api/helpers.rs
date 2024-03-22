@@ -68,4 +68,8 @@ impl TestApplication {
     pub fn get(&self, path: impl Into<String>) -> reqwest::RequestBuilder {
         self.client().get(self.format_url(path))
     }
+
+    pub fn post(&self, path: impl Into<String>) -> reqwest::RequestBuilder {
+        self.client().post(self.format_url(path))
+    }
 }

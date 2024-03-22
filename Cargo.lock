@@ -1074,6 +1074,7 @@ dependencies = [
  "secrecy",
  "serde",
  "serde-aux",
+ "serde_json",
  "serde_with",
  "sqlx",
  "thiserror",
