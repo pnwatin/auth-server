@@ -1,11 +1,12 @@
 use std::net::SocketAddr;
 
 use matoscout_api::{
-    settings::get_settings,
+    settings::{get_settings, DatabaseSettings},
     startup::Application,
     telemetry::{get_subscriber, init_subscriber},
 };
 use once_cell::sync::Lazy;
+use sqlx::{Connection, Executor, PgConnection, PgPool};
 use tracing_subscriber::EnvFilter;
 use uuid::Uuid;
 
@@ -24,6 +25,7 @@ static TRACING: Lazy<()> = Lazy::new(|| {
 pub struct TestApplication {
     pub address: SocketAddr,
     pub base_url: String,
+    pub pool: PgPool,
 }
 
 impl TestApplication {
@@ -38,6 +40,8 @@ impl TestApplication {
 
             settings
         };
+
+        let pool = get_connection_pool(&settings.database).await;
 
         let application = Application::build(settings)
             .await
@@ -54,7 +58,11 @@ impl TestApplication {
 
         tokio::spawn(application.run_until_stopped());
 
-        Self { address, base_url }
+        Self {
+            address,
+            base_url,
+            pool,
+        }
     }
 
     pub fn client(&self) -> reqwest::Client {
@@ -72,4 +80,26 @@ impl TestApplication {
     pub fn post(&self, path: impl Into<String>) -> reqwest::RequestBuilder {
         self.client().post(self.format_url(path))
     }
+}
+
+pub async fn get_connection_pool(database_settings: &DatabaseSettings) -> PgPool {
+    let mut connection = PgConnection::connect_with(&database_settings.without_database())
+        .await
+        .expect("Failed to connect to Postgres.");
+
+    connection
+        .execute(format!(r#"CREATE DATABASE "{}";"#, database_settings.database_name).as_str())
+        .await
+        .expect("Failed to create database");
+
+    let connection_pool = PgPool::connect_with(database_settings.without_database())
+        .await
+        .expect("Failed to connect to Postgres.");
+
+    sqlx::migrate!("./migrations")
+        .run(&connection_pool)
+        .await
+        .expect("Failed to apply migrations to the database.");
+
+    connection_pool
 }
