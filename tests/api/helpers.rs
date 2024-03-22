@@ -92,7 +92,7 @@ pub async fn get_connection_pool(database_settings: &DatabaseSettings) -> PgPool
         .await
         .expect("Failed to create database");
 
-    let connection_pool = PgPool::connect_with(database_settings.without_database())
+    let connection_pool = PgPool::connect_with(database_settings.with_database())
         .await
         .expect("Failed to connect to Postgres.");
 
