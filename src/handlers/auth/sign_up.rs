@@ -6,6 +6,7 @@ use uuid::Uuid;
 
 use crate::domain::Email;
 
+#[tracing::instrument(name = "SIGN UP", skip(pool, payload))]
 pub async fn sign_up_handler(
     Extension(pool): Extension<PgPool>,
     Json(payload): Json<SignUpPayload>,
@@ -18,6 +19,7 @@ pub async fn sign_up_handler(
     Ok(())
 }
 
+#[tracing::instrument(name = "INSERT NEW USER", skip(user, pool))]
 async fn insert_user(user: &SignUpPayload, pool: &PgPool) -> Result<Uuid, sqlx::Error> {
     let user_id = Uuid::new_v4();
 
