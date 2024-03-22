@@ -9,7 +9,6 @@ path = "src/lib.rs"
 
 [[bin]]
 path = "src/main.rs"
-name = "zerotoprod"
 name = "matoscout"
 
 
