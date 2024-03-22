@@ -23,7 +23,9 @@ impl Application {
     pub async fn build(settings: Settings) -> Result<Self, std::io::Error> {
         let connection_pool = get_connection_pool(&settings.database);
 
-        let listener = TcpListener::bind("127.0.0.1:3000").await?;
+        let address = format!("{}:{}", settings.application.host, settings.application.port);
+
+        let listener = TcpListener::bind(address).await?;
 
         let tracing_layer = TraceLayer::new_for_http()
             .make_span_with(

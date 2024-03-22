@@ -34,6 +34,7 @@ impl TestApplication {
             let mut settings = get_settings().expect("Failed to get configuration.");
 
             settings.database.database_name = Uuid::new_v4().to_string();
+            settings.application.port = 0;
 
             settings
         };
@@ -49,10 +50,10 @@ impl TestApplication {
         let ip = address.ip();
         let port = address.port();
 
-        let uri = format!("http://{}:{}", ip, port);
+        let base_url = format!("http://{}:{}", ip, port);
 
         tokio::spawn(application.run_until_stopped());
 
-        Self { address, base_url: uri }
+        Self { address, base_url }
     }
 }

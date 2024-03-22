@@ -1,16 +1,26 @@
 use secrecy::{ExposeSecret, Secret};
 use serde::Deserialize;
+use serde_aux::field_attributes::deserialize_number_from_string;
 use sqlx::{postgres::PgConnectOptions, ConnectOptions};
 use tracing_log::log::LevelFilter;
 
 #[derive(Deserialize)]
 pub struct Settings {
     pub database: DatabaseSettings,
+    pub application: ApplicationSettings
+}
+
+#[derive(Deserialize)]
+pub struct ApplicationSettings {
+    pub host: String,
+    #[serde(deserialize_with = "deserialize_number_from_string")]
+    pub port: u16,
 }
 
 #[derive(Deserialize)]
 pub struct DatabaseSettings {
     pub host: String,
+    #[serde(deserialize_with = "deserialize_number_from_string")]
     pub port: u16,
     pub username: String,
     pub password: Secret<String>,
