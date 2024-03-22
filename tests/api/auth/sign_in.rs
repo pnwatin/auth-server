@@ -3,7 +3,7 @@ use serde_json::json;
 use crate::helpers::TestApplication;
 
 #[tokio::test]
-async fn sign_in() {
+async fn sign_in_with_invalid_data_returns_422() {
     let app = TestApplication::spawn().await;
 
     let test_cases = vec![
