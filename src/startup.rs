@@ -23,7 +23,10 @@ impl Application {
     pub async fn build(settings: Settings) -> Result<Self, std::io::Error> {
         let connection_pool = get_connection_pool(&settings.database);
 
-        let address = format!("{}:{}", settings.application.host, settings.application.port);
+        let address = format!(
+            "{}:{}",
+            settings.application.host, settings.application.port
+        );
 
         let listener = TcpListener::bind(address).await?;
 

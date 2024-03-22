@@ -69,4 +69,3 @@ impl TestApplication {
         self.client().get(self.format_url(path))
     }
 }
-

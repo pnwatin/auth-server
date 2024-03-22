@@ -7,7 +7,7 @@ use tracing_log::log::LevelFilter;
 #[derive(Deserialize)]
 pub struct Settings {
     pub database: DatabaseSettings,
-    pub application: ApplicationSettings
+    pub application: ApplicationSettings,
 }
 
 #[derive(Deserialize)]
