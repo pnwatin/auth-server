@@ -1,6 +1,7 @@
+use serde_with::DeserializeFromStr;
 use validator::ValidateEmail;
 
-#[derive(Debug)]
+#[derive(Debug, DeserializeFromStr)]
 pub struct Email(String);
 
 #[derive(Debug, thiserror::Error)]
@@ -9,10 +10,12 @@ pub enum ParseEmailError {
     Invalid,
 }
 
-impl Email {
-    pub fn parse(email_candidate: String) -> Result<Self, ParseEmailError> {
-        if ValidateEmail::validate_email(&email_candidate) {
-            Ok(Self(email_candidate))
+impl std::str::FromStr for Email {
+    type Err = ParseEmailError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if ValidateEmail::validate_email(&s) {
+            Ok(Self(s.to_string()))
         } else {
             Err(ParseEmailError::Invalid)
         }
@@ -36,7 +39,11 @@ mod tests {
     use claim::assert_err;
     use fake::locales::{self, Data};
 
-    use super::Email;
+    use super::{Email, ParseEmailError};
+
+    fn parse_email(email_candidate: &str) -> Result<Email, ParseEmailError> {
+        email_candidate.parse::<Email>()
+    }
 
     #[derive(Debug, Clone)]
     struct ValidEmailFixture(pub String);
@@ -57,23 +64,20 @@ mod tests {
 
     #[quickcheck_macros::quickcheck]
     fn valid_emails_are_parsed_successfully(valid_email: ValidEmailFixture) -> bool {
-        Email::parse(valid_email.0).is_ok()
+        parse_email(&valid_email.0).is_ok()
     }
 
     #[test]
     fn empty_string_is_rejected() {
-        let email = "".to_string();
-        assert_err!(Email::parse(email));
+        assert_err!(parse_email(""));
     }
 
     #[test]
     fn email_missing_at_symbol_is_rejected() {
-        let email = "ursuladomain.com".to_string();
-        assert_err!(Email::parse(email));
+        assert_err!(parse_email("testwithoutatdomain.com"));
     }
     #[test]
     fn email_missing_subject_is_rejected() {
-        let email = "@domain.com".to_string();
-        assert_err!(Email::parse(email));
+        assert_err!(parse_email("@domain.com"));
     }
 }
