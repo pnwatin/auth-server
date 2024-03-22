@@ -1,3 +1,5 @@
+use std::net::SocketAddr;
+
 use matoscout_api::{
     settings::get_settings,
     startup::Application,
@@ -20,7 +22,8 @@ static TRACING: Lazy<()> = Lazy::new(|| {
 });
 
 pub struct TestApplication {
-    pub address: String,
+    pub address: SocketAddr,
+    pub base_url: String,
 }
 
 impl TestApplication {
@@ -39,10 +42,17 @@ impl TestApplication {
             .await
             .expect("Failed to build application.");
 
+        let address = application
+            .address()
+            .expect("Failed to get application address.");
+
+        let ip = address.ip();
+        let port = address.port();
+
+        let uri = format!("http://{}:{}", ip, port);
+
         tokio::spawn(application.run_until_stopped());
 
-        Self {
-            address: "http://127.0.0.1:3000".into(),
-        }
+        Self { address, base_url: uri }
     }
 }

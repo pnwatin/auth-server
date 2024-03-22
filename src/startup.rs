@@ -1,3 +1,5 @@
+use std::net::SocketAddr;
+
 use axum::{routing::get, Extension, Router};
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use tokio::net::TcpListener;
@@ -44,6 +46,10 @@ impl Application {
             .layer(Extension(connection_pool));
 
         Ok(Self { app, listener })
+    }
+
+    pub fn address(&self) -> Result<SocketAddr, std::io::Error> {
+        self.listener.local_addr()
     }
 
     pub async fn run_until_stopped(self) -> Result<(), std::io::Error> {

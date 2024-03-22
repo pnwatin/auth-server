@@ -5,7 +5,7 @@ async fn health_check_works() {
     let app = TestApplication::spawn().await;
 
     let response = reqwest::Client::new()
-        .get(format!("{}/_health-check", app.address))
+        .get(format!("{}/_health-check", app.base_url))
         .send()
         .await
         .expect("Failed to execute request.");
