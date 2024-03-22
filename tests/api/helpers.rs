@@ -56,4 +56,17 @@ impl TestApplication {
 
         Self { address, base_url }
     }
+
+    pub fn client(&self) -> reqwest::Client {
+        reqwest::Client::new()
+    }
+
+    pub fn format_url(&self, path: impl Into<String>) -> String {
+        format!("{}{}", self.base_url, path.into())
+    }
+
+    pub fn get(&self, path: impl Into<String>) -> reqwest::RequestBuilder {
+        self.client().get(self.format_url(path))
+    }
 }
+
