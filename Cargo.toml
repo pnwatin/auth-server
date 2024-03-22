@@ -25,13 +25,14 @@ sqlx = { version = "0.7.4", features = [
   "runtime-tokio-rustls",
   "macros",
   "postgres",
+  "uuid",
 ] }
 
 # serde
 serde = { version = "1", features = ["derive"] }
 serde_with = { version = "3.7" }
-serde-aux = { version = "4.5"}
-serde_json = { version = "1"}
+serde-aux = { version = "4.5" }
+serde_json = { version = "1" }
 
 # tracing
 tracing = { version = "0.1" }
@@ -43,6 +44,7 @@ validator = { version = "0.17" }
 
 # errors
 thiserror = { version = "1" }
+anyhow = { version = "1" }
 
 # utils
 config = { version = "0.14" }
@@ -51,7 +53,7 @@ uuid = { version = "1.8", features = ["v4"] }
 
 [dev-dependencies]
 once_cell = { version = "1.19" }
-reqwest = { version = "0.12", features = ["json"]}
+reqwest = { version = "0.12", features = ["json"] }
 claim = { version = "0.5" }
 fake = { version = "2.9.2" }
 quickcheck = { version = "1.0.3" }
