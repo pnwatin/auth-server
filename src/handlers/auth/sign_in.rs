@@ -31,7 +31,13 @@ async fn validate_credentials(
             "Invalid email."
         )))?;
 
-    verify_password_hash(stored_credentials.1, credentials.password).await?;
+    tokio::task::spawn_blocking(move || {
+        verify_password_hash(stored_credentials.1, credentials.password)
+    })
+    .await
+    .context("Failed to spawn blocking task.")
+    .map_err(SignInError::UnexpectedError)?
+    .await?;
 
     Ok(stored_credentials.0)
 }
