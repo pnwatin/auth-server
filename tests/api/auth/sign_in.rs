@@ -1,6 +1,41 @@
+use matoscout_api::handlers::Tokens;
 use serde_json::json;
 
 use crate::helpers::TestApplication;
+
+#[tokio::test]
+async fn sign_in_with_valid_credentials_return_tokens() {
+    let app = TestApplication::spawn().await;
+
+    let email = "test@domain.com";
+    let password = "password";
+
+    app.post("/auth/sign-up")
+        .json(&json!({
+        "email": email,
+        "password": password
+        }))
+        .send()
+        .await
+        .expect("Failed to execute request.");
+
+    let response = app
+        .post("/auth/sign-in")
+        .json(&json!({
+            "email": email,
+            "password": password
+        }))
+        .send()
+        .await
+        .expect("Failed to execute request.");
+
+    assert_eq!(200, response.status().as_u16());
+
+    response
+        .json::<Tokens>()
+        .await
+        .expect("Valid sign-in didn't return pair of tokens");
+}
 
 #[tokio::test]
 async fn sign_in_with_valid_credentials_return_200() {

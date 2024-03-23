@@ -2,7 +2,7 @@ use anyhow::Context;
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use axum::{http::StatusCode, response::IntoResponse, Extension, Json};
 use secrecy::{ExposeSecret, Secret};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -12,10 +12,15 @@ use crate::{domain::Email, telemetry::spawn_blocking_with_tracing};
 pub async fn sign_in_handler(
     Extension(pool): Extension<PgPool>,
     Json(payload): Json<SignInPayload>,
-) -> Result<(), SignInError> {
+) -> Result<Json<Tokens>, SignInError> {
     validate_credentials(payload, &pool).await?;
 
-    Ok(())
+    let body = Json(Tokens {
+        access_token: Uuid::new_v4().to_string(),
+        refresh_token: Uuid::new_v4().to_string(),
+    });
+
+    Ok(body)
 }
 
 #[tracing::instrument(name = "VALIDATE CREDENTIALS", skip(credentials, pool))]
@@ -118,4 +123,10 @@ impl IntoResponse for SignInError {
 pub struct SignInPayload {
     pub email: Email,
     pub password: Secret<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Tokens {
+    access_token: String,
+    refresh_token: String,
 }

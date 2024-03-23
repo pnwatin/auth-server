@@ -4,6 +4,8 @@ mod tokens;
 
 use axum::{routing::post, Router};
 
+pub use sign_in::Tokens;
+
 pub fn auth_router() -> Router {
     Router::new()
         .route("/sign-up", post(sign_up::sign_up_handler))
