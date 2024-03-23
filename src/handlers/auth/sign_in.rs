@@ -12,7 +12,7 @@ use crate::{domain::Email, telemetry::spawn_blocking_with_tracing};
 pub async fn sign_in_handler(
     Extension(pool): Extension<PgPool>,
     Json(payload): Json<SignInPayload>,
-) -> Result<Json<Tokens>, SignInError> {
+) -> Result<impl IntoResponse, SignInError> {
     validate_credentials(payload, &pool).await?;
 
     let body = Json(Tokens {

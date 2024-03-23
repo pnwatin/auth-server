@@ -12,7 +12,7 @@ use crate::domain::Email;
 pub async fn sign_up_handler(
     Extension(pool): Extension<PgPool>,
     Json(payload): Json<SignUpPayload>,
-) -> Result<(), SignUpError> {
+) -> Result<impl IntoResponse, SignUpError> {
     let password_salt = SaltString::generate(rand::thread_rng());
     let password_hash = Secret::new(
         Argon2::default()
@@ -29,7 +29,7 @@ pub async fn sign_up_handler(
             _ => SignUpError::UnexpectedError(e.into()),
         })?;
 
-    Ok(())
+    Ok(StatusCode::CREATED)
 }
 
 #[tracing::instrument(name = "INSERT NEW USER", skip(email, password_hash, pool))]
@@ -70,6 +70,7 @@ pub enum SignUpError {
 impl IntoResponse for SignUpError {
     fn into_response(self) -> axum::response::Response {
         match self {
+            // TODO: mitigate this privacy risk (return 201 and send confirmation mail ?)
             SignUpError::EmailTaken => (StatusCode::CONFLICT).into_response(),
             SignUpError::UnexpectedError(_) => (StatusCode::INTERNAL_SERVER_ERROR).into_response(),
         }

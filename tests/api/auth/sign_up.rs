@@ -17,7 +17,7 @@ async fn sign_up_with_valid_data_persists_user() {
         .await
         .expect("Failed to execute request.")
         .error_for_status()
-        .expect("Failed test");
+        .expect("Failed posting to /auth/sign-up");
 
     let saved_user = sqlx::query!("SELECT email FROM users;")
         .fetch_one(&app.pool)
@@ -25,6 +25,40 @@ async fn sign_up_with_valid_data_persists_user() {
         .expect("Failed to fetch new user.");
 
     assert_eq!(saved_user.email, email_payload);
+}
+
+#[tokio::test]
+async fn sign_up_with_existing_email_returns_409() {
+    let app = TestApplication::spawn().await;
+
+    let email = "test@gmail.com";
+    let password = "password";
+
+    let payload = json!({
+        "email": email,
+        "password": password
+    });
+
+    app.post("/auth/sign-up")
+        .json(&payload)
+        .send()
+        .await
+        .expect("Failed to execute request.")
+        .error_for_status()
+        .expect("Failed posting to /auth/sign-up");
+
+    let response = app
+        .post("/auth/sign-up")
+        .json(&payload)
+        .send()
+        .await
+        .expect("Failed to execute request.");
+
+    assert_eq!(
+        409,
+        response.status().as_u16(),
+        "/auth/sign-up did not return 409 when email is already taken."
+    )
 }
 
 #[tokio::test]
