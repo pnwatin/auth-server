@@ -1,4 +1,4 @@
-use tokio::task::{spawn_blocking, JoinHandle};
+use tokio::task::JoinHandle;
 use tracing::{subscriber::set_global_default, Subscriber};
 use tracing_subscriber::{
     fmt::{format::FmtSpan, MakeWriter},
