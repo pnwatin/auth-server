@@ -6,7 +6,7 @@ use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::domain::Email;
+use crate::{domain::Email, telemetry::spawn_blocking_with_tracing};
 
 #[tracing::instrument(name = "SIGN IN", skip(payload))]
 pub async fn sign_in_handler(
@@ -31,7 +31,7 @@ async fn validate_credentials(
             "Invalid email."
         )))?;
 
-    tokio::task::spawn_blocking(move || {
+    spawn_blocking_with_tracing(move || {
         verify_password_hash(stored_credentials.1, credentials.password)
     })
     .await
