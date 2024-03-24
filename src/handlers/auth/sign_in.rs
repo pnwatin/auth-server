@@ -1,8 +1,6 @@
 use anyhow::Context;
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use axum::{response::IntoResponse, Extension, Json};
-use chrono::{Duration, Utc};
-use jsonwebtoken::{encode, Header};
 use secrecy::{ExposeSecret, Secret};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
@@ -10,7 +8,7 @@ use uuid::Uuid;
 
 use crate::{domain::Email, startup::JWTSecret, telemetry::spawn_blocking_with_tracing};
 
-use super::{AuthError, Keys, TokenClaims};
+use super::{create_access_token, create_refresh_token, AuthError, Keys};
 
 #[tracing::instrument(name = "SIGN IN", skip(payload, jwt_secret))]
 pub async fn sign_in_handler(
@@ -24,29 +22,9 @@ pub async fn sign_in_handler(
 
     let keys = Keys::new(secret);
 
-    let access_token_expires_at =
-        Utc::now() + Duration::try_minutes(10).context("Failed to create expiration for jwt.")?;
+    let access_token = create_access_token(user_id, &keys.encoding)?;
 
-    let access_token_claims = TokenClaims {
-        sub: user_id,
-        jit: Uuid::new_v4(),
-        iat: Utc::now().timestamp() as usize,
-        exp: access_token_expires_at.timestamp() as usize,
-    };
-
-    let access_token = encode(&Header::default(), &access_token_claims, &keys.encoding).unwrap();
-
-    let refresh_token_expires_at =
-        Utc::now() + Duration::try_days(7).context("Failed to create expiration for jwt.")?;
-
-    let refresh_token_claims = TokenClaims {
-        sub: user_id,
-        jit: Uuid::new_v4(),
-        iat: Utc::now().timestamp() as usize,
-        exp: refresh_token_expires_at.timestamp() as usize,
-    };
-
-    let refresh_token = encode(&Header::default(), &refresh_token_claims, &keys.encoding).unwrap();
+    let refresh_token = create_refresh_token(user_id, &keys.encoding)?;
 
     let body = Json(Tokens {
         access_token,
