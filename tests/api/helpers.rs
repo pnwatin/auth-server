@@ -1,11 +1,13 @@
 use std::net::SocketAddr;
 
+use fake::{Fake, Faker};
 use matoscout_api::{
     settings::{get_settings, DatabaseSettings},
-    startup::Application,
+    startup::{Application, JWTSecret},
     telemetry::{get_subscriber, init_subscriber},
 };
 use once_cell::sync::Lazy;
+use secrecy::Secret;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use tracing_subscriber::EnvFilter;
 use uuid::Uuid;
@@ -26,6 +28,7 @@ pub struct TestApplication {
     pub address: SocketAddr,
     pub base_url: String,
     pub pool: PgPool,
+    pub jwt_secret: JWTSecret,
 }
 
 impl TestApplication {
@@ -37,11 +40,14 @@ impl TestApplication {
 
             settings.database.database_name = Uuid::new_v4().to_string();
             settings.application.port = 0;
+            settings.application.jwt_secret = Secret::new(Faker.fake());
 
             settings
         };
 
         let pool = get_connection_pool(&settings.database).await;
+
+        let jwt_secret = JWTSecret(settings.application.jwt_secret.clone());
 
         let application = Application::build(settings)
             .await
@@ -62,6 +68,7 @@ impl TestApplication {
             address,
             base_url,
             pool,
+            jwt_secret,
         }
     }
 
