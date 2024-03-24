@@ -1,15 +1,15 @@
+mod error;
 mod sign_in;
 mod sign_up;
 mod tokens;
 
 use axum::{routing::post, Router};
-use jsonwebtoken::DecodingKey;
-use jsonwebtoken::EncodingKey;
-
-use serde::Deserialize;
-use serde::Serialize;
+use jsonwebtoken::{DecodingKey, EncodingKey};
+use serde::{Deserialize, Serialize};
 pub use sign_in::Tokens;
 use uuid::Uuid;
+
+pub use error::*;
 
 pub fn auth_router() -> Router {
     Router::new()

@@ -1,6 +1,6 @@
 use anyhow::Context;
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
-use axum::{http::StatusCode, response::IntoResponse, Extension, Json};
+use axum::{response::IntoResponse, Extension, Json};
 use chrono::{Duration, Utc};
 use jsonwebtoken::{encode, Header};
 use secrecy::{ExposeSecret, Secret};
@@ -10,14 +10,14 @@ use uuid::Uuid;
 
 use crate::{domain::Email, startup::JWTSecret, telemetry::spawn_blocking_with_tracing};
 
-use super::{Keys, TokenClaims};
+use super::{AuthError, Keys, TokenClaims};
 
 #[tracing::instrument(name = "SIGN IN", skip(payload, jwt_secret))]
 pub async fn sign_in_handler(
     Extension(pool): Extension<PgPool>,
     Extension(jwt_secret): Extension<JWTSecret>,
     Json(payload): Json<SignInPayload>,
-) -> Result<impl IntoResponse, SignInError> {
+) -> Result<impl IntoResponse, AuthError> {
     let user_id = validate_credentials(payload, &pool).await?;
 
     let secret = jwt_secret.expose_secret();
@@ -60,7 +60,7 @@ pub async fn sign_in_handler(
 async fn validate_credentials(
     credentials: SignInPayload,
     pool: &PgPool,
-) -> Result<Uuid, SignInError> {
+) -> Result<Uuid, AuthError> {
     let mut user_id = None;
     let mut expected_password_hash = Secret::new(
         "$argon2id$v=19$m=15000,t=2,p=1$\
@@ -73,7 +73,7 @@ async fn validate_credentials(
         get_stored_credentials(&credentials.email, pool)
             .await
             .context("Failed to execute query.")
-            .map_err(SignInError::UnexpectedError)?
+            .map_err(AuthError::UnexpectedError)?
     {
         user_id = Some(stored_user_id);
         expected_password_hash = stored_password_hash;
@@ -84,10 +84,10 @@ async fn validate_credentials(
     })
     .await
     .context("Failed to spawn blocking task.")
-    .map_err(SignInError::UnexpectedError)?
+    .map_err(AuthError::UnexpectedError)?
     .await?;
 
-    user_id.ok_or_else(|| SignInError::InvalidCredentials(anyhow::anyhow!("Invalid email.")))
+    user_id.ok_or_else(|| AuthError::InvalidCredentials(anyhow::anyhow!("Invalid email.")))
 }
 
 #[tracing::instrument(name = "GET STORED CREDENTIALS", skip(email, pool))]
@@ -121,10 +121,10 @@ async fn get_stored_credentials(
 async fn verify_password_hash(
     expected_password_hash: Secret<String>,
     password_candidate: Secret<String>,
-) -> Result<(), SignInError> {
+) -> Result<(), AuthError> {
     let expected_password_hash = PasswordHash::new(expected_password_hash.expose_secret())
         .context("Failed to parse hash in PHC string format.")
-        .map_err(SignInError::UnexpectedError)?;
+        .map_err(AuthError::UnexpectedError)?;
 
     Argon2::default()
         .verify_password(
@@ -132,24 +132,7 @@ async fn verify_password_hash(
             &expected_password_hash,
         )
         .context("Invalid password.")
-        .map_err(SignInError::InvalidCredentials)
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum SignInError {
-    #[error("Invalid credentials")]
-    InvalidCredentials(#[source] anyhow::Error),
-    #[error(transparent)]
-    UnexpectedError(#[from] anyhow::Error),
-}
-
-impl IntoResponse for SignInError {
-    fn into_response(self) -> axum::response::Response {
-        match self {
-            SignInError::InvalidCredentials(_) => (StatusCode::UNAUTHORIZED).into_response(),
-            SignInError::UnexpectedError(_) => (StatusCode::INTERNAL_SERVER_ERROR).into_response(),
-        }
-    }
+        .map_err(AuthError::InvalidCredentials)
 }
 
 #[derive(Debug, Deserialize)]
