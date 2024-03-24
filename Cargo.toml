@@ -42,6 +42,7 @@ tracing-log = { version = "0.2" }
 
 # crypto
 argon2 = { version = "0.5.3", features = ["std"] }
+jsonwebtoken = { version = "9.3.0" }
 
 # validations
 validator = { version = "0.17" }
@@ -51,9 +52,10 @@ thiserror = { version = "1" }
 anyhow = { version = "1" }
 
 # utils
+chrono = { version = "0.4.35", features = ["serde"] }
 config = { version = "0.14" }
 secrecy = { version = "0.8", features = ["serde"] }
-uuid = { version = "1.8", features = ["v4"] }
+uuid = { version = "1.8", features = ["v4", "serde"] }
 rand = { version = "0.8.5", features = ["std_rng"] }
 
 [dev-dependencies]

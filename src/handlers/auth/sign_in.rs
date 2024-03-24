@@ -1,6 +1,8 @@
 use anyhow::Context;
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use axum::{http::StatusCode, response::IntoResponse, Extension, Json};
+use chrono::{Duration, Utc};
+use jsonwebtoken::{encode, DecodingKey, EncodingKey, Header};
 use secrecy::{ExposeSecret, Secret};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
@@ -13,11 +15,39 @@ pub async fn sign_in_handler(
     Extension(pool): Extension<PgPool>,
     Json(payload): Json<SignInPayload>,
 ) -> Result<impl IntoResponse, SignInError> {
-    validate_credentials(payload, &pool).await?;
+    let user_id = validate_credentials(payload, &pool).await?;
+
+    let secret = b"my-jwt-secret";
+
+    let keys = Keys::new(secret);
+
+    let access_token_expires_at =
+        Utc::now() + Duration::try_minutes(10).context("Failed to create expiration for jwt.")?;
+
+    let access_token_claims = Claims {
+        sub: user_id,
+        jit: Uuid::new_v4(),
+        iat: Utc::now().timestamp() as usize,
+        exp: access_token_expires_at.timestamp() as usize,
+    };
+
+    let access_token = encode(&Header::default(), &access_token_claims, &keys.encoding).unwrap();
+
+    let refresh_token_expires_at =
+        Utc::now() + Duration::try_days(7).context("Failed to create expiration for jwt.")?;
+
+    let refresh_token_claims = Claims {
+        sub: user_id,
+        jit: Uuid::new_v4(),
+        iat: Utc::now().timestamp() as usize,
+        exp: refresh_token_expires_at.timestamp() as usize,
+    };
+
+    let refresh_token = encode(&Header::default(), &refresh_token_claims, &keys.encoding).unwrap();
 
     let body = Json(Tokens {
-        access_token: Uuid::new_v4().to_string(),
-        refresh_token: Uuid::new_v4().to_string(),
+        access_token,
+        refresh_token,
     });
 
     Ok(body)
@@ -129,4 +159,26 @@ pub struct SignInPayload {
 pub struct Tokens {
     access_token: String,
     refresh_token: String,
+}
+
+pub struct Keys {
+    pub encoding: EncodingKey,
+    pub decoding: DecodingKey,
+}
+
+impl Keys {
+    fn new(secret: &[u8]) -> Self {
+        Self {
+            encoding: EncodingKey::from_secret(secret),
+            decoding: DecodingKey::from_secret(secret),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Claims {
+    sub: Uuid,
+    jit: Uuid,
+    iat: usize,
+    exp: usize,
 }
