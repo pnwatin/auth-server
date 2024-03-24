@@ -8,16 +8,17 @@ use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::{domain::Email, telemetry::spawn_blocking_with_tracing};
+use crate::{domain::Email, startup::JWTSecret, telemetry::spawn_blocking_with_tracing};
 
-#[tracing::instrument(name = "SIGN IN", skip(payload))]
+#[tracing::instrument(name = "SIGN IN", skip(payload, jwt_secret))]
 pub async fn sign_in_handler(
     Extension(pool): Extension<PgPool>,
+    Extension(jwt_secret): Extension<JWTSecret>,
     Json(payload): Json<SignInPayload>,
 ) -> Result<impl IntoResponse, SignInError> {
     let user_id = validate_credentials(payload, &pool).await?;
 
-    let secret = b"my-jwt-secret";
+    let secret = jwt_secret.expose_secret();
 
     let keys = Keys::new(secret);
 

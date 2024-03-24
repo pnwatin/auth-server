@@ -1,6 +1,7 @@
 use std::net::SocketAddr;
 
 use axum::{routing::get, Extension, Router};
+use secrecy::{ExposeSecret, Secret};
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use tokio::net::TcpListener;
 use tower::ServiceBuilder;
@@ -24,6 +25,8 @@ pub struct Application {
 impl Application {
     pub async fn build(settings: Settings) -> Result<Self, std::io::Error> {
         let connection_pool = get_connection_pool(&settings.database);
+
+        let jwt_secret = JWTSecret(settings.application.jwt_secret);
 
         let address = format!(
             "{}:{}",
@@ -55,7 +58,8 @@ impl Application {
             .route("/_health-check", get(handlers::health_check_handler))
             .nest("/auth", handlers::auth_router())
             .layer(middleware)
-            .layer(Extension(connection_pool));
+            .layer(Extension(connection_pool))
+            .layer(Extension(jwt_secret));
 
         Ok(Self { app, listener })
     }
@@ -75,4 +79,13 @@ pub fn get_connection_pool(settings: &DatabaseSettings) -> PgPool {
     PgPoolOptions::new()
         .acquire_timeout(std::time::Duration::from_secs(2))
         .connect_lazy_with(settings.with_database())
+}
+
+#[derive(Clone)]
+pub struct JWTSecret(pub Secret<String>);
+
+impl JWTSecret {
+    pub fn expose_secret(&self) -> &[u8] {
+        self.0.expose_secret().as_bytes()
+    }
 }
