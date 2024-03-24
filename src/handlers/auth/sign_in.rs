@@ -2,13 +2,15 @@ use anyhow::Context;
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use axum::{http::StatusCode, response::IntoResponse, Extension, Json};
 use chrono::{Duration, Utc};
-use jsonwebtoken::{encode, DecodingKey, EncodingKey, Header};
+use jsonwebtoken::{encode, Header};
 use secrecy::{ExposeSecret, Secret};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::{domain::Email, startup::JWTSecret, telemetry::spawn_blocking_with_tracing};
+
+use super::{Keys, TokenClaims};
 
 #[tracing::instrument(name = "SIGN IN", skip(payload, jwt_secret))]
 pub async fn sign_in_handler(
@@ -25,7 +27,7 @@ pub async fn sign_in_handler(
     let access_token_expires_at =
         Utc::now() + Duration::try_minutes(10).context("Failed to create expiration for jwt.")?;
 
-    let access_token_claims = Claims {
+    let access_token_claims = TokenClaims {
         sub: user_id,
         jit: Uuid::new_v4(),
         iat: Utc::now().timestamp() as usize,
@@ -37,7 +39,7 @@ pub async fn sign_in_handler(
     let refresh_token_expires_at =
         Utc::now() + Duration::try_days(7).context("Failed to create expiration for jwt.")?;
 
-    let refresh_token_claims = Claims {
+    let refresh_token_claims = TokenClaims {
         sub: user_id,
         jit: Uuid::new_v4(),
         iat: Utc::now().timestamp() as usize,
@@ -160,26 +162,4 @@ pub struct SignInPayload {
 pub struct Tokens {
     pub access_token: String,
     pub refresh_token: String,
-}
-
-pub struct Keys {
-    pub encoding: EncodingKey,
-    pub decoding: DecodingKey,
-}
-
-impl Keys {
-    pub fn new(secret: &[u8]) -> Self {
-        Self {
-            encoding: EncodingKey::from_secret(secret),
-            decoding: DecodingKey::from_secret(secret),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct Claims {
-    pub sub: Uuid,
-    pub jit: Uuid,
-    pub iat: usize,
-    pub exp: usize,
 }

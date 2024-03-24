@@ -1,5 +1,5 @@
 use jsonwebtoken::{decode, Validation};
-use matoscout_api::handlers::{Claims, Keys, Tokens};
+use matoscout_api::handlers::{Keys, TokenClaims, Tokens};
 use serde_json::json;
 
 use crate::helpers::TestApplication;
@@ -43,11 +43,11 @@ async fn sign_in_with_valid_credentials_return_valid_tokens() {
 
     let validation = Validation::default();
 
-    let access_token: Claims = decode(&tokens.access_token, &keys.decoding, &validation)
+    let access_token: TokenClaims = decode(&tokens.access_token, &keys.decoding, &validation)
         .expect("Access token is invalid")
         .claims;
 
-    let refresh_token: Claims = decode(&tokens.refresh_token, &keys.decoding, &validation)
+    let refresh_token: TokenClaims = decode(&tokens.refresh_token, &keys.decoding, &validation)
         .expect("refresh token is invalid")
         .claims;
 
