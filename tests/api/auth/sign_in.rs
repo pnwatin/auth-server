@@ -1,10 +1,11 @@
-use matoscout_api::handlers::Tokens;
+use jsonwebtoken::{decode, Validation};
+use matoscout_api::handlers::{Claims, Keys, Tokens};
 use serde_json::json;
 
 use crate::helpers::TestApplication;
 
 #[tokio::test]
-async fn sign_in_with_valid_credentials_return_tokens() {
+async fn sign_in_with_valid_credentials_return_valid_tokens() {
     let app = TestApplication::spawn().await;
 
     let email = "test@domain.com";
@@ -31,10 +32,26 @@ async fn sign_in_with_valid_credentials_return_tokens() {
 
     assert_eq!(200, response.status().as_u16());
 
-    response
-        .json::<Tokens>()
+    let tokens: Tokens = response
+        .json()
         .await
         .expect("Valid sign-in didn't return pair of tokens");
+
+    let secret = app.jwt_secret.expose_secret();
+
+    let keys = Keys::new(secret);
+
+    let validation = Validation::default();
+
+    let access_token: Claims = decode(&tokens.access_token, &keys.decoding, &validation)
+        .expect("Access token is invalid")
+        .claims;
+
+    let refresh_token: Claims = decode(&tokens.refresh_token, &keys.decoding, &validation)
+        .expect("refresh token is invalid")
+        .claims;
+
+    assert_eq!(access_token.iat, refresh_token.iat);
 }
 
 #[tokio::test]

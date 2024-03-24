@@ -158,8 +158,8 @@ pub struct SignInPayload {
 
 #[derive(Serialize, Deserialize)]
 pub struct Tokens {
-    access_token: String,
-    refresh_token: String,
+    pub access_token: String,
+    pub refresh_token: String,
 }
 
 pub struct Keys {
@@ -168,7 +168,7 @@ pub struct Keys {
 }
 
 impl Keys {
-    fn new(secret: &[u8]) -> Self {
+    pub fn new(secret: &[u8]) -> Self {
         Self {
             encoding: EncodingKey::from_secret(secret),
             decoding: DecodingKey::from_secret(secret),
@@ -178,8 +178,8 @@ impl Keys {
 
 #[derive(Serialize, Deserialize)]
 pub struct Claims {
-    sub: Uuid,
-    jit: Uuid,
-    iat: usize,
-    exp: usize,
+    pub sub: Uuid,
+    pub jit: Uuid,
+    pub iat: usize,
+    pub exp: usize,
 }

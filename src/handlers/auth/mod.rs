@@ -4,6 +4,8 @@ mod tokens;
 
 use axum::{routing::post, Router};
 
+pub use sign_in::Claims;
+pub use sign_in::Keys;
 pub use sign_in::Tokens;
 
 pub fn auth_router() -> Router {
