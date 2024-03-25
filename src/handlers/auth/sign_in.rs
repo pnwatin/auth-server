@@ -32,7 +32,7 @@ pub async fn sign_in_handler(
     .encode(&keys.encoding)
     .context("Failed to encode refresh token.")?;
 
-    let body = Json(Tokens {
+    let body = Json(TokensResponse {
         access_token,
         refresh_token,
     });
@@ -126,7 +126,7 @@ pub struct SignInPayload {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct Tokens {
+pub struct TokensResponse {
     pub access_token: String,
     pub refresh_token: String,
 }

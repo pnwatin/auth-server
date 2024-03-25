@@ -7,7 +7,7 @@ use axum::{routing::post, Router};
 use chrono::Utc;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-pub use sign_in::Tokens;
+pub use sign_in::TokensResponse;
 use uuid::Uuid;
 
 pub use error::*;

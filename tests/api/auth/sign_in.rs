@@ -1,5 +1,5 @@
 use jsonwebtoken::Validation;
-use matoscout_api::handlers::{AccessToken, RefreshToken, Token, Tokens};
+use matoscout_api::handlers::{AccessToken, RefreshToken, Token, TokensResponse};
 use serde_json::json;
 
 use crate::helpers::{TestApplication, TestApplicationSettings};
@@ -32,7 +32,7 @@ async fn sign_in_with_valid_credentials_return_valid_tokens() {
 
     assert_eq!(200, response.status().as_u16());
 
-    let tokens: Tokens = response
+    let tokens: TokensResponse = response
         .json()
         .await
         .expect("Valid sign-in didn't return pair of tokens.");
@@ -81,7 +81,7 @@ async fn sign_in_with_valid_credentials_return_tokens_that_expire() {
 
     assert_eq!(200, response.status().as_u16());
 
-    let tokens: Tokens = response
+    let tokens: TokensResponse = response
         .json()
         .await
         .expect("Valid sign-in didn't return pair of tokens.");
