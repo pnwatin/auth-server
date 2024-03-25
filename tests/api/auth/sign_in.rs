@@ -1,5 +1,6 @@
+use chrono::Utc;
 use jsonwebtoken::{decode, Validation};
-use matoscout_api::handlers::{Keys, TokenClaims, Tokens};
+use matoscout_api::handlers::{TokenClaims, Tokens};
 use serde_json::json;
 
 use crate::helpers::{TestApplication, TestApplicationSettings};
@@ -37,9 +38,7 @@ async fn sign_in_with_valid_credentials_return_valid_tokens() {
         .await
         .expect("Valid sign-in didn't return pair of tokens.");
 
-    let secret = app.jwt_settings.expose_secret();
-
-    let keys = Keys::new(secret);
+    let keys = app.jwt_settings.get_keys();
 
     let validation = Validation::default();
 
@@ -56,7 +55,7 @@ async fn sign_in_with_valid_credentials_return_valid_tokens() {
 
 #[tokio::test]
 async fn sign_in_with_valid_credentials_return_tokens_that_expire() {
-    let token_exp_milliseconds = 5;
+    let token_exp_milliseconds = 1000;
     let app = TestApplication::spawn_with_settings(TestApplicationSettings {
         access_token_exp_milliseconds: token_exp_milliseconds,
         refresh_token_exp_milliseconds: token_exp_milliseconds,
@@ -92,9 +91,7 @@ async fn sign_in_with_valid_credentials_return_tokens_that_expire() {
         .await
         .expect("Valid sign-in didn't return pair of tokens.");
 
-    let secret = app.jwt_settings.expose_secret();
-
-    let keys = Keys::new(secret);
+    let keys = app.jwt_settings.get_keys();
 
     let mut validation = Validation::default();
     validation.leeway = 0;

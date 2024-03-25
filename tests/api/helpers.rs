@@ -2,8 +2,7 @@ use std::net::SocketAddr;
 
 use fake::{Fake, Faker};
 use matoscout_api::{
-    handlers::JWTSettings,
-    settings::{get_settings, DatabaseSettings},
+    settings::{get_settings, DatabaseSettings, JWTSettings},
     startup::Application,
     telemetry::{get_subscriber, init_subscriber},
 };

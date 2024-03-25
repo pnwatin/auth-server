@@ -6,9 +6,9 @@ use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::{domain::Email, telemetry::spawn_blocking_with_tracing};
+use crate::{domain::Email, settings::JWTSettings, telemetry::spawn_blocking_with_tracing};
 
-use super::{create_access_token, create_refresh_token, AuthError, JWTSettings, Keys};
+use super::{create_access_token, create_refresh_token, AuthError};
 
 #[tracing::instrument(name = "SIGN IN", skip(payload, jwt_settings))]
 pub async fn sign_in_handler(
@@ -18,9 +18,7 @@ pub async fn sign_in_handler(
 ) -> Result<impl IntoResponse, AuthError> {
     let user_id = validate_credentials(payload, &pool).await?;
 
-    let secret = jwt_settings.expose_secret();
-
-    let keys = Keys::new(secret);
+    let keys = jwt_settings.get_keys();
 
     let access_token = create_access_token(
         user_id,

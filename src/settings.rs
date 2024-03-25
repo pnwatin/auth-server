@@ -1,16 +1,40 @@
+use jsonwebtoken::{DecodingKey, EncodingKey};
 use secrecy::{ExposeSecret, Secret};
 use serde::Deserialize;
 use serde_aux::field_attributes::deserialize_number_from_string;
 use sqlx::{postgres::PgConnectOptions, ConnectOptions};
 use tracing_log::log::LevelFilter;
 
-use crate::handlers::JWTSettings;
-
 #[derive(Deserialize)]
 pub struct Settings {
     pub database: DatabaseSettings,
     pub application: ApplicationSettings,
     pub jwt: JWTSettings,
+}
+
+#[derive(Deserialize, Clone)]
+pub struct JWTSettings {
+    pub secret: Secret<String>,
+    #[serde(deserialize_with = "deserialize_number_from_string")]
+    pub access_token_exp_milliseconds: u64,
+    #[serde(deserialize_with = "deserialize_number_from_string")]
+    pub refresh_token_exp_milliseconds: u64,
+}
+
+pub struct JWTKeys {
+    pub encoding: EncodingKey,
+    pub decoding: DecodingKey,
+}
+
+impl JWTSettings {
+    pub fn get_keys(&self) -> JWTKeys {
+        let secret = self.secret.expose_secret().as_bytes();
+
+        JWTKeys {
+            encoding: EncodingKey::from_secret(secret),
+            decoding: DecodingKey::from_secret(secret),
+        }
+    }
 }
 
 #[derive(Deserialize)]
