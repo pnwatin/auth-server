@@ -16,9 +16,9 @@ pub struct Settings {
 pub struct JWTSettings {
     pub secret: Secret<String>,
     #[serde(deserialize_with = "deserialize_number_from_string")]
-    pub access_token_exp_milliseconds: u64,
+    pub access_token_exp_seconds: i64,
     #[serde(deserialize_with = "deserialize_number_from_string")]
-    pub refresh_token_exp_milliseconds: u64,
+    pub refresh_token_exp_seconds: i64,
 }
 
 pub struct JWTKeys {

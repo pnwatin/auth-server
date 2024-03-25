@@ -1,5 +1,5 @@
-use jsonwebtoken::{decode, Validation};
-use matoscout_api::handlers::{TokenClaims, Tokens};
+use jsonwebtoken::Validation;
+use matoscout_api::handlers::{AccessToken, RefreshToken, Token, Tokens};
 use serde_json::json;
 
 use crate::helpers::{TestApplication, TestApplicationSettings};
@@ -39,25 +39,21 @@ async fn sign_in_with_valid_credentials_return_valid_tokens() {
 
     let keys = app.jwt_settings.get_keys();
 
-    let validation = Validation::default();
+    let access_token = AccessToken::decode(&tokens.access_token, &keys.decoding)
+        .expect("Access token is invalid.");
 
-    let access_token: TokenClaims = decode(&tokens.access_token, &keys.decoding, &validation)
-        .expect("Access token is invalid.")
-        .claims;
-
-    let refresh_token: TokenClaims = decode(&tokens.refresh_token, &keys.decoding, &validation)
-        .expect("refresh token is invalid.")
-        .claims;
+    let refresh_token = RefreshToken::decode(&tokens.refresh_token, &keys.decoding)
+        .expect("refresh token is invalid.");
 
     assert_eq!(access_token.iat, refresh_token.iat);
 }
 
 #[tokio::test]
 async fn sign_in_with_valid_credentials_return_tokens_that_expire() {
-    let token_exp_milliseconds = 1000;
+    let token_exp_seconds = 1;
     let app = TestApplication::spawn_with_settings(TestApplicationSettings {
-        access_token_exp_milliseconds: token_exp_milliseconds,
-        refresh_token_exp_milliseconds: token_exp_milliseconds,
+        access_token_exp_seconds: token_exp_seconds,
+        refresh_token_exp_seconds: token_exp_seconds,
     })
     .await;
 
@@ -95,13 +91,16 @@ async fn sign_in_with_valid_credentials_return_tokens_that_expire() {
     let mut validation = Validation::default();
     validation.leeway = 0;
 
-    tokio::time::sleep(std::time::Duration::from_millis(token_exp_milliseconds * 2)).await;
+    tokio::time::sleep(std::time::Duration::from_secs(
+        (token_exp_seconds as u64) * 2,
+    ))
+    .await;
 
-    decode::<TokenClaims>(&tokens.access_token, &keys.decoding, &validation)
+    AccessToken::decode_with_validation(&tokens.access_token, &keys.decoding, &validation)
         .expect_err("Access token didn't expire.");
 
-    decode::<TokenClaims>(&tokens.refresh_token, &keys.decoding, &validation)
-        .expect_err("Refresh token didnt'expire.");
+    RefreshToken::decode_with_validation(&tokens.refresh_token, &keys.decoding, &validation)
+        .expect_err("Refresh token didn't expire.");
 }
 
 #[tokio::test]

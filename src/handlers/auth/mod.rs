@@ -3,11 +3,10 @@ mod sign_in;
 mod sign_up;
 mod tokens;
 
-use anyhow::Context;
 use axum::{routing::post, Router};
-use chrono::{Duration, Utc};
-use jsonwebtoken::{encode, EncodingKey};
-use serde::{Deserialize, Serialize};
+use chrono::Utc;
+use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 pub use sign_in::Tokens;
 use uuid::Uuid;
 
@@ -23,58 +22,105 @@ pub fn auth_router() -> Router {
         )
 }
 
-pub fn create_access_token(
-    user_id: Uuid,
-    encoding_key: &EncodingKey,
-    exp_milliseconds: u64,
-) -> Result<String, AuthError> {
-    let iat = Utc::now().timestamp() as usize;
-    let exp = (Utc::now()
-        + Duration::try_milliseconds(exp_milliseconds as i64)
-            .context("Failed to create access token exp.")?)
-    .timestamp() as usize;
-
-    let claims = TokenClaims {
-        exp,
-        sub: user_id,
-        jit: Uuid::new_v4(),
-        iat,
-    };
-
-    let token = encode(&jsonwebtoken::Header::default(), &claims, encoding_key)
-        .context("Failed to encode access token.")?;
-
-    Ok(token)
-}
-
-pub fn create_refresh_token(
-    user_id: Uuid,
-    encoding_key: &EncodingKey,
-    exp_milliseconds: u64,
-) -> Result<String, AuthError> {
-    let iat = Utc::now().timestamp() as usize;
-    let exp = (Utc::now()
-        + Duration::try_milliseconds(exp_milliseconds as i64)
-            .context("Failed to create refresh token exp.")?)
-    .timestamp() as usize;
-
-    let claims = TokenClaims {
-        exp,
-        sub: user_id,
-        jit: Uuid::new_v4(),
-        iat,
-    };
-
-    let token = encode(&jsonwebtoken::Header::default(), &claims, encoding_key)
-        .context("Failed to encode refresh token.")?;
-
-    Ok(token)
+#[derive(Serialize, Deserialize, Debug)]
+pub struct AccessTokenClaims {
+    pub sub: Uuid,
+    pub jit: Uuid,
+    pub iat: i64,
+    pub exp: i64,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct TokenClaims {
+pub struct RefreshTokenClaims {
     pub sub: Uuid,
+    pub family: Uuid,
     pub jit: Uuid,
-    pub iat: usize,
-    pub exp: usize,
+    pub iat: i64,
+    pub exp: i64,
+}
+
+pub trait TokenClaims: Serialize + DeserializeOwned {}
+
+impl TokenClaims for AccessTokenClaims {}
+impl TokenClaims for RefreshTokenClaims {}
+
+pub trait Token<T: TokenClaims>: Sized {
+    fn encode(&self, encoding_key: &EncodingKey) -> Result<String, jsonwebtoken::errors::Error> {
+        let token = encode(&Header::default(), &self.get_claims(), encoding_key)?;
+
+        Ok(token)
+    }
+
+    fn decode(token: &str, decoding_key: &DecodingKey) -> Result<T, jsonwebtoken::errors::Error> {
+        let token_data = decode::<T>(token, decoding_key, &Validation::default())?;
+
+        Ok(token_data.claims)
+    }
+
+    fn decode_with_validation(
+        token: &str,
+        decoding_key: &DecodingKey,
+        validation: &Validation,
+    ) -> Result<T, jsonwebtoken::errors::Error> {
+        let token_data = decode::<T>(token, decoding_key, validation)?;
+
+        Ok(token_data.claims)
+    }
+
+    fn get_claims(&self) -> &T;
+}
+
+impl<T: TokenClaims> Token<T> for (T,) {
+    fn get_claims(&self) -> &T {
+        &self.0
+    }
+}
+
+pub struct RefreshToken(RefreshTokenClaims);
+
+impl Token<RefreshTokenClaims> for RefreshToken {
+    fn get_claims(&self) -> &RefreshTokenClaims {
+        &self.0
+    }
+}
+
+impl RefreshToken {
+    pub fn new(user_id: Uuid, family: Uuid, exp_seconds: i64) -> Self {
+        let iat = Utc::now().timestamp();
+        let exp = iat + exp_seconds;
+
+        let claims = RefreshTokenClaims {
+            iat,
+            exp,
+            sub: user_id,
+            family,
+            jit: Uuid::new_v4(),
+        };
+
+        Self(claims)
+    }
+}
+
+pub struct AccessToken(AccessTokenClaims);
+
+impl AccessToken {
+    pub fn new(user_id: Uuid, exp_seconds: i64) -> Self {
+        let iat = Utc::now().timestamp();
+        let exp = iat + exp_seconds;
+
+        let claims = AccessTokenClaims {
+            iat,
+            exp,
+            sub: user_id,
+            jit: Uuid::new_v4(),
+        };
+
+        Self(claims)
+    }
+}
+
+impl Token<AccessTokenClaims> for AccessToken {
+    fn get_claims(&self) -> &AccessTokenClaims {
+        &self.0
+    }
 }

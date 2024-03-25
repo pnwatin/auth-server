@@ -32,8 +32,8 @@ pub struct TestApplication {
 }
 
 pub struct TestApplicationSettings {
-    pub access_token_exp_milliseconds: u64,
-    pub refresh_token_exp_milliseconds: u64,
+    pub access_token_exp_seconds: i64,
+    pub refresh_token_exp_seconds: i64,
 }
 
 impl TestApplication {
@@ -48,10 +48,10 @@ impl TestApplication {
             settings.jwt.secret = Secret::new(Faker.fake());
 
             if let Some(additionnal_settings) = additionnal_settings {
-                settings.jwt.access_token_exp_milliseconds =
-                    additionnal_settings.access_token_exp_milliseconds;
-                settings.jwt.refresh_token_exp_milliseconds =
-                    additionnal_settings.refresh_token_exp_milliseconds;
+                settings.jwt.access_token_exp_seconds =
+                    additionnal_settings.access_token_exp_seconds;
+                settings.jwt.refresh_token_exp_seconds =
+                    additionnal_settings.refresh_token_exp_seconds;
             }
 
             settings
