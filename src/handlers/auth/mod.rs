@@ -39,12 +39,10 @@ pub struct RefreshTokenClaims {
     pub exp: i64,
 }
 
-pub trait TokenClaims: Serialize + DeserializeOwned {}
-
-impl TokenClaims for AccessTokenClaims {}
-impl TokenClaims for RefreshTokenClaims {}
-
-pub trait Token<T: TokenClaims>: Sized {
+pub trait Token<T>: Sized
+where
+    T: Serialize + DeserializeOwned,
+{
     fn encode(&self, encoding_key: &EncodingKey) -> Result<String, jsonwebtoken::errors::Error> {
         let token = encode(&Header::default(), &self.get_claims(), encoding_key)?;
 
@@ -68,12 +66,6 @@ pub trait Token<T: TokenClaims>: Sized {
     }
 
     fn get_claims(&self) -> &T;
-}
-
-impl<T: TokenClaims> Token<T> for (T,) {
-    fn get_claims(&self) -> &T {
-        &self.0
-    }
 }
 
 pub struct RefreshToken(RefreshTokenClaims);
