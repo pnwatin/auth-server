@@ -1,4 +1,3 @@
-use chrono::Utc;
 use jsonwebtoken::{decode, Validation};
 use matoscout_api::handlers::{TokenClaims, Tokens};
 use serde_json::json;
