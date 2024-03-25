@@ -49,6 +49,52 @@ async fn sign_in_with_valid_credentials_return_valid_tokens() {
 }
 
 #[tokio::test]
+async fn sign_in_with_valid_credentials_persists_refresh_token() {
+    let app = TestApplication::spawn().await;
+
+    let email = "test@domain.com";
+    let password = "password";
+
+    app.post("/auth/sign-up")
+        .json(&json!({
+        "email": email,
+        "password": password
+        }))
+        .send()
+        .await
+        .expect("Failed to execute request.");
+
+    let response = app
+        .post("/auth/sign-in")
+        .json(&json!({
+            "email": email,
+            "password": password
+        }))
+        .send()
+        .await
+        .expect("Failed to execute request.");
+
+    assert_eq!(200, response.status().as_u16());
+
+    let tokens: TokensResponse = response
+        .json()
+        .await
+        .expect("Valid sign-in didn't return pair of tokens.");
+
+    let keys = app.jwt_settings.get_keys();
+
+    let refresh_token = RefreshToken::decode(&tokens.refresh_token, &keys.decoding)
+        .expect("refresh token is invalid.");
+
+    let saved_refresh_token = sqlx::query!("SELECT * from refresh_tokens")
+        .fetch_one(&app.pool)
+        .await
+        .expect("Failed to fetch new refresh_token");
+
+    assert_eq!(saved_refresh_token.jit, refresh_token.jit);
+}
+
+#[tokio::test]
 async fn sign_in_with_valid_credentials_return_tokens_that_expire() {
     let token_exp_seconds = 1;
     let app = TestApplication::spawn_with_settings(TestApplicationSettings {

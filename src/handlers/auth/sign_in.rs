@@ -29,6 +29,9 @@ pub async fn sign_in_handler(
         Uuid::new_v4(),
         jwt_settings.access_token_exp_seconds,
     )
+    .save(&pool)
+    .await
+    .context("Failed to save refresh token.")?
     .encode(&keys.encoding)
     .context("Failed to encode refresh token.")?;
 

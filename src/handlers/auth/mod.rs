@@ -4,10 +4,11 @@ mod sign_up;
 mod tokens;
 
 use axum::{routing::post, Router};
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 pub use sign_in::TokensResponse;
+use sqlx::PgPool;
 use uuid::Uuid;
 
 pub use error::*;
@@ -90,6 +91,29 @@ impl RefreshToken {
         };
 
         Self(claims)
+    }
+
+    pub async fn save(self, pool: &PgPool) -> Result<Self, sqlx::Error> {
+        let claims = self.get_claims();
+
+        let expires_at = DateTime::from_timestamp(claims.exp, 0);
+
+        sqlx::query!(
+            r#"
+                INSERT INTO refresh_tokens (id, user_id, jit, family, expires_at, created_at)
+                VALUES ($1, $2, $3, $4, $5, $6);
+            "#,
+            Uuid::new_v4(),
+            claims.sub,
+            claims.jit,
+            claims.family,
+            expires_at,
+            Utc::now()
+        )
+        .execute(pool)
+        .await?;
+
+        Ok(self)
     }
 }
 
