@@ -1,7 +1,10 @@
 application:
   port: 3000
   host: 0.0.0.0
-  jwt_secret: my-jwt-secret
+jwt:
+  secret: my-jwt-secret
+  access_token_exp_milliseconds: 600000
+  refresh_token_exp_milliseconds: 604800000
 database:
   host: 127.0.0.1
   port: 5432

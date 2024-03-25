@@ -6,25 +6,33 @@ use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::{domain::Email, startup::JWTSecret, telemetry::spawn_blocking_with_tracing};
+use crate::{domain::Email, telemetry::spawn_blocking_with_tracing};
 
-use super::{create_access_token, create_refresh_token, AuthError, Keys};
+use super::{create_access_token, create_refresh_token, AuthError, JWTSettings, Keys};
 
-#[tracing::instrument(name = "SIGN IN", skip(payload, jwt_secret))]
+#[tracing::instrument(name = "SIGN IN", skip(payload, jwt_settings))]
 pub async fn sign_in_handler(
     Extension(pool): Extension<PgPool>,
-    Extension(jwt_secret): Extension<JWTSecret>,
+    Extension(jwt_settings): Extension<JWTSettings>,
     Json(payload): Json<SignInPayload>,
 ) -> Result<impl IntoResponse, AuthError> {
     let user_id = validate_credentials(payload, &pool).await?;
 
-    let secret = jwt_secret.expose_secret();
+    let secret = jwt_settings.expose_secret();
 
     let keys = Keys::new(secret);
 
-    let access_token = create_access_token(user_id, &keys.encoding)?;
+    let access_token = create_access_token(
+        user_id,
+        &keys.encoding,
+        jwt_settings.access_token_exp_milliseconds,
+    )?;
 
-    let refresh_token = create_refresh_token(user_id, &keys.encoding)?;
+    let refresh_token = create_refresh_token(
+        user_id,
+        &keys.encoding,
+        jwt_settings.refresh_token_exp_milliseconds,
+    )?;
 
     let body = Json(Tokens {
         access_token,

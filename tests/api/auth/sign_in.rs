@@ -2,7 +2,7 @@ use jsonwebtoken::{decode, Validation};
 use matoscout_api::handlers::{Keys, TokenClaims, Tokens};
 use serde_json::json;
 
-use crate::helpers::TestApplication;
+use crate::helpers::{TestApplication, TestApplicationSettings};
 
 #[tokio::test]
 async fn sign_in_with_valid_credentials_return_valid_tokens() {
@@ -35,23 +35,77 @@ async fn sign_in_with_valid_credentials_return_valid_tokens() {
     let tokens: Tokens = response
         .json()
         .await
-        .expect("Valid sign-in didn't return pair of tokens");
+        .expect("Valid sign-in didn't return pair of tokens.");
 
-    let secret = app.jwt_secret.expose_secret();
+    let secret = app.jwt_settings.expose_secret();
 
     let keys = Keys::new(secret);
 
     let validation = Validation::default();
 
     let access_token: TokenClaims = decode(&tokens.access_token, &keys.decoding, &validation)
-        .expect("Access token is invalid")
+        .expect("Access token is invalid.")
         .claims;
 
     let refresh_token: TokenClaims = decode(&tokens.refresh_token, &keys.decoding, &validation)
-        .expect("refresh token is invalid")
+        .expect("refresh token is invalid.")
         .claims;
 
     assert_eq!(access_token.iat, refresh_token.iat);
+}
+
+#[tokio::test]
+async fn sign_in_with_valid_credentials_return_tokens_that_expire() {
+    let token_exp_milliseconds = 5;
+    let app = TestApplication::spawn_with_settings(TestApplicationSettings {
+        access_token_exp_milliseconds: token_exp_milliseconds,
+        refresh_token_exp_milliseconds: token_exp_milliseconds,
+    })
+    .await;
+
+    let email = "test@domain.com";
+    let password = "password";
+
+    app.post("/auth/sign-up")
+        .json(&json!({
+        "email": email,
+        "password": password
+        }))
+        .send()
+        .await
+        .expect("Failed to execute request.");
+
+    let response = app
+        .post("/auth/sign-in")
+        .json(&json!({
+            "email": email,
+            "password": password
+        }))
+        .send()
+        .await
+        .expect("Failed to execute request.");
+
+    assert_eq!(200, response.status().as_u16());
+
+    let tokens: Tokens = response
+        .json()
+        .await
+        .expect("Valid sign-in didn't return pair of tokens.");
+
+    let secret = app.jwt_settings.expose_secret();
+
+    let keys = Keys::new(secret);
+
+    let mut validation = Validation::default();
+    validation.leeway = 0;
+
+    tokio::time::sleep(std::time::Duration::from_millis(token_exp_milliseconds * 2)).await;
+
+    decode::<TokenClaims>(&tokens.access_token, &keys.decoding, &validation)
+        .expect_err("Access token didn't expire.");
+
+    decode::<TokenClaims>(&tokens.refresh_token, &keys.decoding, &validation)
+        .expect_err("Refresh token didnt'expire.");
 }
 
 #[tokio::test]
@@ -153,7 +207,7 @@ async fn sign_in_with_invalid_data_returns_422() {
         assert_eq!(
             422,
             response.status().as_u16(),
-            "/auth/sign-in did not return 422 when body was {}",
+            "/auth/sign-in did not return 422 when body was {}.",
             error_message
         );
     }

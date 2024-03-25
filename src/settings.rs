@@ -4,10 +4,13 @@ use serde_aux::field_attributes::deserialize_number_from_string;
 use sqlx::{postgres::PgConnectOptions, ConnectOptions};
 use tracing_log::log::LevelFilter;
 
+use crate::handlers::JWTSettings;
+
 #[derive(Deserialize)]
 pub struct Settings {
     pub database: DatabaseSettings,
     pub application: ApplicationSettings,
+    pub jwt: JWTSettings,
 }
 
 #[derive(Deserialize)]
@@ -15,7 +18,6 @@ pub struct ApplicationSettings {
     pub host: String,
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub port: u16,
-    pub jwt_secret: Secret<String>,
 }
 
 #[derive(Deserialize)]
