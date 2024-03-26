@@ -6,48 +6,36 @@ use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::{domain::Email, settings::JWTSettings, telemetry::spawn_blocking_with_tracing};
+use crate::{domain::Email, telemetry::spawn_blocking_with_tracing};
 
 use super::{AccessToken, AuthError, RefreshToken, TokensPair, TokensResponse};
 
-#[tracing::instrument(name = "HANDLER - SIGN IN", skip(payload, jwt_settings))]
+#[tracing::instrument(name = "HANDLER - SIGN IN", skip(payload))]
 pub async fn sign_in_handler(
     Extension(pool): Extension<PgPool>,
-    Extension(jwt_settings): Extension<JWTSettings>,
     Json(payload): Json<SignInPayload>,
 ) -> Result<impl IntoResponse, AuthError> {
     let user_id = validate_credentials(payload, &pool).await?;
 
-    let tokens = generate_tokens(user_id, &jwt_settings, &pool).await?;
+    let tokens = generate_tokens(user_id, &pool).await?;
 
     let body = Json(TokensResponse::try_from(tokens).context("Couldn't encode tokens.")?);
 
     Ok(body)
 }
 
-#[tracing::instrument(name = "GENERATE TOKENS", skip(user_id, jwt_settings, pool))]
-async fn generate_tokens(
-    user_id: Uuid,
-    jwt_settings: &JWTSettings,
-    pool: &PgPool,
-) -> Result<TokensPair, AuthError> {
-    let keys = jwt_settings.get_keys();
+#[tracing::instrument(name = "GENERATE TOKENS", skip(user_id, pool))]
+async fn generate_tokens(user_id: Uuid, pool: &PgPool) -> Result<TokensPair, AuthError> {
+    let access_token = AccessToken::new(user_id);
 
-    let access_token = AccessToken::new(user_id, jwt_settings.access_token_exp_seconds);
-
-    let refresh_token = RefreshToken::new(
-        user_id,
-        Uuid::new_v4(),
-        jwt_settings.access_token_exp_seconds,
-    )
-    .save(pool)
-    .await
-    .context("Failed to save refresh token.")?;
+    let refresh_token = RefreshToken::new(user_id, Uuid::new_v4())
+        .save(pool)
+        .await
+        .context("Failed to save refresh token.")?;
 
     Ok(TokensPair {
         access_token,
         refresh_token,
-        keys,
     })
 }
 

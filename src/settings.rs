@@ -1,4 +1,5 @@
 use jsonwebtoken::{DecodingKey, EncodingKey};
+use once_cell::sync::Lazy;
 use secrecy::{ExposeSecret, Secret};
 use serde::Deserialize;
 use serde_aux::field_attributes::deserialize_number_from_string;
@@ -93,6 +94,7 @@ pub fn get_settings() -> Result<Settings, config::ConfigError> {
 }
 
 pub enum Environment {
+    Test,
     Local,
     Production,
 }
@@ -100,6 +102,7 @@ pub enum Environment {
 impl Environment {
     pub fn as_str(&self) -> &'static str {
         match self {
+            Environment::Test => "test",
             Environment::Local => "local",
             Environment::Production => "production",
         }
@@ -112,9 +115,33 @@ impl TryFrom<String> for Environment {
         match value.to_lowercase().as_str() {
             "local" => Ok(Self::Local),
             "production" => Ok(Self::Production),
+            "test" => Ok(Self::Test),
             other => Err(format!(
-                "{other} is not a supported environment. Use either `local` or `production`."
+                "{other} is not a supported environment. Use either `test`, `local` or `production`."
             )),
         }
+    }
+}
+
+pub static JWT_CONFIG: Lazy<JWTConfig> =
+    Lazy::new(|| JWTConfig::new().expect("Couldn't retreive jwt config."));
+
+pub struct JWTConfig {
+    pub access_token_exp_seconds: i64,
+    pub refresh_token_exp_seconds: i64,
+    pub keys: JWTKeys,
+}
+
+impl JWTConfig {
+    fn new() -> Result<JWTConfig, config::ConfigError> {
+        let jwt_settings = get_settings()?.jwt;
+
+        let keys = jwt_settings.get_keys();
+
+        Ok(Self {
+            access_token_exp_seconds: jwt_settings.access_token_exp_seconds,
+            refresh_token_exp_seconds: jwt_settings.refresh_token_exp_seconds,
+            keys,
+        })
     }
 }

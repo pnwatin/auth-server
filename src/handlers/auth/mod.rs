@@ -6,14 +6,14 @@ mod tokens;
 use anyhow::Context;
 use axum::{routing::post, Router};
 use chrono::{DateTime, Utc};
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use jsonwebtoken::{decode, encode, Header, Validation};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
 
 pub use error::*;
 
-use crate::settings::JWTKeys;
+use crate::settings::JWT_CONFIG;
 
 pub fn auth_router() -> Router {
     Router::new()
@@ -46,24 +46,27 @@ pub trait Token<T>: Sized
 where
     T: Serialize + DeserializeOwned,
 {
-    fn encode(&self, encoding_key: &EncodingKey) -> Result<String, jsonwebtoken::errors::Error> {
-        let token = encode(&Header::default(), &self.claims(), encoding_key)?;
+    fn encode(&self) -> Result<String, jsonwebtoken::errors::Error> {
+        let token = encode(
+            &Header::default(),
+            &self.claims(),
+            &JWT_CONFIG.keys.encoding,
+        )?;
 
         Ok(token)
     }
 
-    fn decode(token: &str, decoding_key: &DecodingKey) -> Result<T, jsonwebtoken::errors::Error> {
-        let token_data = decode::<T>(token, decoding_key, &Validation::default())?;
+    fn decode(token: &str) -> Result<T, jsonwebtoken::errors::Error> {
+        let token_data = decode::<T>(token, &JWT_CONFIG.keys.decoding, &Validation::default())?;
 
         Ok(token_data.claims)
     }
 
     fn decode_with_validation(
         token: &str,
-        decoding_key: &DecodingKey,
         validation: &Validation,
     ) -> Result<T, jsonwebtoken::errors::Error> {
-        let token_data = decode::<T>(token, decoding_key, validation)?;
+        let token_data = decode::<T>(token, &JWT_CONFIG.keys.decoding, validation)?;
 
         Ok(token_data.claims)
     }
@@ -74,9 +77,9 @@ where
 pub struct RefreshToken(RefreshTokenClaims);
 
 impl RefreshToken {
-    pub fn new(user_id: Uuid, family: Uuid, exp_seconds: i64) -> Self {
+    pub fn new(user_id: Uuid, family: Uuid) -> Self {
         let iat = Utc::now().timestamp();
-        let exp = iat + exp_seconds;
+        let exp = iat + JWT_CONFIG.refresh_token_exp_seconds;
 
         let claims = RefreshTokenClaims {
             iat,
@@ -160,9 +163,9 @@ impl Token<RefreshTokenClaims> for RefreshToken {
 pub struct AccessToken(AccessTokenClaims);
 
 impl AccessToken {
-    pub fn new(user_id: Uuid, exp_seconds: i64) -> Self {
+    pub fn new(user_id: Uuid) -> Self {
         let iat = Utc::now().timestamp();
-        let exp = iat + exp_seconds;
+        let exp = iat + JWT_CONFIG.access_token_exp_seconds;
 
         let claims = AccessTokenClaims {
             iat,
@@ -190,7 +193,6 @@ impl Token<AccessTokenClaims> for AccessToken {
 struct TokensPair {
     pub access_token: AccessToken,
     pub refresh_token: RefreshToken,
-    pub keys: JWTKeys,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -202,8 +204,8 @@ pub struct TokensResponse {
 impl TryFrom<TokensPair> for TokensResponse {
     type Error = jsonwebtoken::errors::Error;
     fn try_from(value: TokensPair) -> Result<Self, Self::Error> {
-        let access_token = value.access_token.encode(&value.keys.encoding)?;
-        let refresh_token = value.refresh_token.encode(&value.keys.encoding)?;
+        let access_token = value.access_token.encode()?;
+        let refresh_token = value.refresh_token.encode()?;
 
         Ok(Self {
             access_token,

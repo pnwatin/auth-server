@@ -1,8 +1,11 @@
 use jsonwebtoken::Validation;
-use matoscout_api::handlers::{AccessToken, RefreshToken, Token, TokensResponse};
+use matoscout_api::{
+    handlers::{AccessToken, RefreshToken, Token, TokensResponse},
+    settings::JWT_CONFIG,
+};
 use serde_json::json;
 
-use crate::helpers::{TestApplication, TestApplicationSettings};
+use crate::helpers::TestApplication;
 
 #[tokio::test]
 async fn sign_in_with_valid_credentials_return_valid_tokens() {
@@ -37,13 +40,10 @@ async fn sign_in_with_valid_credentials_return_valid_tokens() {
         .await
         .expect("Valid sign-in didn't return pair of tokens.");
 
-    let keys = app.jwt_settings.get_keys();
+    let access_token = AccessToken::decode(&tokens.access_token).expect("Access token is invalid.");
 
-    let access_token = AccessToken::decode(&tokens.access_token, &keys.decoding)
-        .expect("Access token is invalid.");
-
-    let refresh_token = RefreshToken::decode(&tokens.refresh_token, &keys.decoding)
-        .expect("refresh token is invalid.");
+    let refresh_token =
+        RefreshToken::decode(&tokens.refresh_token).expect("refresh token is invalid.");
 
     assert_eq!(access_token.iat, refresh_token.iat);
 }
@@ -81,10 +81,8 @@ async fn sign_in_with_valid_credentials_persists_refresh_token() {
         .await
         .expect("Valid sign-in didn't return pair of tokens.");
 
-    let keys = app.jwt_settings.get_keys();
-
-    let refresh_token = RefreshToken::decode(&tokens.refresh_token, &keys.decoding)
-        .expect("refresh token is invalid.");
+    let refresh_token =
+        RefreshToken::decode(&tokens.refresh_token).expect("refresh token is invalid.");
 
     let saved_refresh_token = sqlx::query!("SELECT * from refresh_tokens")
         .fetch_one(&app.pool)
@@ -96,12 +94,7 @@ async fn sign_in_with_valid_credentials_persists_refresh_token() {
 
 #[tokio::test]
 async fn sign_in_with_valid_credentials_return_tokens_that_expire() {
-    let token_exp_seconds = 1;
-    let app = TestApplication::spawn_with_settings(TestApplicationSettings {
-        access_token_exp_seconds: token_exp_seconds,
-        refresh_token_exp_seconds: token_exp_seconds,
-    })
-    .await;
+    let app = TestApplication::spawn().await;
 
     let email = "test@domain.com";
     let password = "password";
@@ -132,17 +125,18 @@ async fn sign_in_with_valid_credentials_return_tokens_that_expire() {
         .await
         .expect("Valid sign-in didn't return pair of tokens.");
 
-    let keys = app.jwt_settings.get_keys();
-
     let mut validation = Validation::default();
     validation.leeway = 0;
 
-    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+    tokio::time::sleep(std::time::Duration::from_secs(
+        (JWT_CONFIG.access_token_exp_seconds as u64) + 1,
+    ))
+    .await;
 
-    AccessToken::decode_with_validation(&tokens.access_token, &keys.decoding, &validation)
+    AccessToken::decode_with_validation(&tokens.access_token, &validation)
         .expect_err("Access token didn't expire.");
 
-    RefreshToken::decode_with_validation(&tokens.refresh_token, &keys.decoding, &validation)
+    RefreshToken::decode_with_validation(&tokens.refresh_token, &validation)
         .expect_err("Refresh token didn't expire.");
 }
 

@@ -58,9 +58,9 @@ config = { version = "0.14" }
 secrecy = { version = "0.8", features = ["serde"] }
 uuid = { version = "1.8", features = ["v4", "serde"] }
 rand = { version = "0.8.5", features = ["std_rng"] }
+once_cell = { version = "1.19" }
 
 [dev-dependencies]
-once_cell = { version = "1.19" }
 reqwest = { version = "0.12", features = ["json"] }
 claim = { version = "0.5" }
 fake = { version = "2.9.2" }

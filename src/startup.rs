@@ -55,8 +55,7 @@ impl Application {
             .route("/_health-check", get(handlers::health_check_handler))
             .nest("/auth", handlers::auth_router())
             .layer(middleware)
-            .layer(Extension(connection_pool))
-            .layer(Extension(settings.jwt));
+            .layer(Extension(connection_pool));
 
         Ok(Self { app, listener })
     }
