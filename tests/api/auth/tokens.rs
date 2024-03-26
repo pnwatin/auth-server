@@ -40,7 +40,7 @@ async fn refresh_tokens_with_invalid_refresh_token_returns_401() {
 }
 
 #[tokio::test]
-async fn refresh_tokens_with_used_refresh_token_invalid_token_family() {
+async fn refresh_tokens_with_used_refresh_token_invalids_token_family() {
     let app = TestApplication::spawn().await;
 
     let email = "test@domain.com";
