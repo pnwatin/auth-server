@@ -137,10 +137,7 @@ async fn sign_in_with_valid_credentials_return_tokens_that_expire() {
     let mut validation = Validation::default();
     validation.leeway = 0;
 
-    tokio::time::sleep(std::time::Duration::from_secs(
-        (token_exp_seconds as u64) * 2,
-    ))
-    .await;
+    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
 
     AccessToken::decode_with_validation(&tokens.access_token, &keys.decoding, &validation)
         .expect_err("Access token didn't expire.");

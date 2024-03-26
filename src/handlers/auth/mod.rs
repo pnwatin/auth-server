@@ -3,6 +3,7 @@ mod sign_in;
 mod sign_up;
 mod tokens;
 
+use anyhow::Context;
 use axum::{routing::post, Router};
 use chrono::{DateTime, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
@@ -45,7 +46,7 @@ where
     T: Serialize + DeserializeOwned,
 {
     fn encode(&self, encoding_key: &EncodingKey) -> Result<String, jsonwebtoken::errors::Error> {
-        let token = encode(&Header::default(), &self.get_claims(), encoding_key)?;
+        let token = encode(&Header::default(), &self.claims(), encoding_key)?;
 
         Ok(token)
     }
@@ -66,16 +67,10 @@ where
         Ok(token_data.claims)
     }
 
-    fn get_claims(&self) -> &T;
+    fn claims(&self) -> &T;
 }
 
 pub struct RefreshToken(RefreshTokenClaims);
-
-impl Token<RefreshTokenClaims> for RefreshToken {
-    fn get_claims(&self) -> &RefreshTokenClaims {
-        &self.0
-    }
-}
 
 impl RefreshToken {
     pub fn new(user_id: Uuid, family: Uuid, exp_seconds: i64) -> Self {
@@ -94,14 +89,18 @@ impl RefreshToken {
     }
 
     pub async fn save(self, pool: &PgPool) -> Result<Self, sqlx::Error> {
-        let claims = self.get_claims();
+        let claims = self.claims();
 
         let expires_at = DateTime::from_timestamp(claims.exp, 0);
 
         sqlx::query!(
             r#"
                 INSERT INTO refresh_tokens (id, user_id, jit, family, expires_at, created_at)
-                VALUES ($1, $2, $3, $4, $5, $6);
+                VALUES ($1, $2, $3, $4, $5, $6)
+                ON CONFLICT (family) DO UPDATE
+                SET jit = EXCLUDED.jit,
+                    expires_at = EXCLUDED.expires_at,
+                    created_at = EXCLUDED.created_at;
             "#,
             Uuid::new_v4(),
             claims.sub,
@@ -114,6 +113,67 @@ impl RefreshToken {
         .await?;
 
         Ok(self)
+    }
+
+    pub async fn validate(self, pool: &PgPool) -> Result<Self, AuthError> {
+        let result = sqlx::query!(
+            r#"
+                SELECT * FROM refresh_tokens WHERE jit = $1; 
+            "#,
+            self.claims().jit
+        )
+        .fetch_optional(pool)
+        .await
+        .context("Failed to fetch execute query")?;
+
+        if result.is_none() {
+            sqlx::query!(
+                r#"
+                    DELETE FROM refresh_tokens WHERE family = $1;
+                "#,
+                self.claims().family
+            )
+            .execute(pool)
+            .await
+            .context("Couldn't delete invalid token family.")?;
+
+            return Err(AuthError::InvalidToken);
+        }
+
+        Ok(self)
+    }
+
+    pub async fn refresh(
+        token: &str,
+        decoding_key: &DecodingKey,
+        exp_seconds: i64,
+        pool: &PgPool,
+    ) -> Result<Self, AuthError> {
+        let claims = Self::decode(token, decoding_key).map_err(|_| AuthError::InvalidToken)?;
+
+        let user_id = claims.sub;
+        let family = claims.family;
+
+        Self(claims).validate(pool).await?;
+
+        let refresh_token = Self::new(user_id, family, exp_seconds)
+            .save(pool)
+            .await
+            .context("Failed to save refresh token.")?;
+
+        Ok(refresh_token)
+    }
+}
+
+impl From<RefreshTokenClaims> for RefreshToken {
+    fn from(value: RefreshTokenClaims) -> Self {
+        Self(value)
+    }
+}
+
+impl Token<RefreshTokenClaims> for RefreshToken {
+    fn claims(&self) -> &RefreshTokenClaims {
+        &self.0
     }
 }
 
@@ -135,8 +195,14 @@ impl AccessToken {
     }
 }
 
+impl From<AccessTokenClaims> for AccessToken {
+    fn from(value: AccessTokenClaims) -> Self {
+        Self(value)
+    }
+}
+
 impl Token<AccessTokenClaims> for AccessToken {
-    fn get_claims(&self) -> &AccessTokenClaims {
+    fn claims(&self) -> &AccessTokenClaims {
         &self.0
     }
 }
