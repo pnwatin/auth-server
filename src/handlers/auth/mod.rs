@@ -142,27 +142,6 @@ impl RefreshToken {
 
         Ok(self)
     }
-
-    pub async fn refresh(
-        token: &str,
-        decoding_key: &DecodingKey,
-        exp_seconds: i64,
-        pool: &PgPool,
-    ) -> Result<Self, AuthError> {
-        let claims = Self::decode(token, decoding_key).map_err(|_| AuthError::InvalidToken)?;
-
-        let user_id = claims.sub;
-        let family = claims.family;
-
-        Self(claims).validate(pool).await?;
-
-        let refresh_token = Self::new(user_id, family, exp_seconds)
-            .save(pool)
-            .await
-            .context("Failed to save refresh token.")?;
-
-        Ok(refresh_token)
-    }
 }
 
 impl From<RefreshTokenClaims> for RefreshToken {
