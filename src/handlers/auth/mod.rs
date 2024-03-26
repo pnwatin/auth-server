@@ -8,11 +8,12 @@ use axum::{routing::post, Router};
 use chrono::{DateTime, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-pub use sign_in::TokensResponse;
 use sqlx::PgPool;
 use uuid::Uuid;
 
 pub use error::*;
+
+use crate::settings::JWTKeys;
 
 pub fn auth_router() -> Router {
     Router::new()
@@ -183,5 +184,30 @@ impl From<AccessTokenClaims> for AccessToken {
 impl Token<AccessTokenClaims> for AccessToken {
     fn claims(&self) -> &AccessTokenClaims {
         &self.0
+    }
+}
+
+struct TokensPair {
+    pub access_token: AccessToken,
+    pub refresh_token: RefreshToken,
+    pub keys: JWTKeys,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct TokensResponse {
+    pub access_token: String,
+    pub refresh_token: String,
+}
+
+impl TryFrom<TokensPair> for TokensResponse {
+    type Error = jsonwebtoken::errors::Error;
+    fn try_from(value: TokensPair) -> Result<Self, Self::Error> {
+        let access_token = value.access_token.encode(&value.keys.encoding)?;
+        let refresh_token = value.refresh_token.encode(&value.keys.encoding)?;
+
+        Ok(Self {
+            access_token,
+            refresh_token,
+        })
     }
 }

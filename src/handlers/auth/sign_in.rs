@@ -2,13 +2,13 @@ use anyhow::Context;
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use axum::{response::IntoResponse, Extension, Json};
 use secrecy::{ExposeSecret, Secret};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::{domain::Email, settings::JWTSettings, telemetry::spawn_blocking_with_tracing};
 
-use super::{AccessToken, AuthError, RefreshToken, Token};
+use super::{AccessToken, AuthError, RefreshToken, TokensPair, TokensResponse};
 
 #[tracing::instrument(name = "SIGN IN", skip(payload, jwt_settings))]
 pub async fn sign_in_handler(
@@ -18,29 +18,37 @@ pub async fn sign_in_handler(
 ) -> Result<impl IntoResponse, AuthError> {
     let user_id = validate_credentials(payload, &pool).await?;
 
+    let tokens = generate_tokens(user_id, &jwt_settings, &pool).await?;
+
+    let body = Json(TokensResponse::try_from(tokens).context("Couldn't encode tokens.")?);
+
+    Ok(body)
+}
+
+#[tracing::instrument(name = "GENERATE TOKENS", skip(user_id, jwt_settings, pool))]
+async fn generate_tokens(
+    user_id: Uuid,
+    jwt_settings: &JWTSettings,
+    pool: &PgPool,
+) -> Result<TokensPair, AuthError> {
     let keys = jwt_settings.get_keys();
 
-    let access_token = AccessToken::new(user_id, jwt_settings.access_token_exp_seconds)
-        .encode(&keys.encoding)
-        .context("Failed to encode access token.")?;
+    let access_token = AccessToken::new(user_id, jwt_settings.access_token_exp_seconds);
 
     let refresh_token = RefreshToken::new(
         user_id,
         Uuid::new_v4(),
         jwt_settings.access_token_exp_seconds,
     )
-    .save(&pool)
+    .save(pool)
     .await
-    .context("Failed to save refresh token.")?
-    .encode(&keys.encoding)
-    .context("Failed to encode refresh token.")?;
+    .context("Failed to save refresh token.")?;
 
-    let body = Json(TokensResponse {
+    Ok(TokensPair {
         access_token,
         refresh_token,
-    });
-
-    Ok(body)
+        keys,
+    })
 }
 
 #[tracing::instrument(name = "VALIDATE CREDENTIALS", skip(credentials, pool))]
@@ -126,10 +134,4 @@ async fn verify_password_hash(
 pub struct SignInPayload {
     pub email: Email,
     pub password: Secret<String>,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct TokensResponse {
-    pub access_token: String,
-    pub refresh_token: String,
 }
