@@ -22,22 +22,6 @@ pub struct JWTSettings {
     pub refresh_token_exp_seconds: i64,
 }
 
-pub struct JWTKeys {
-    pub encoding: EncodingKey,
-    pub decoding: DecodingKey,
-}
-
-impl JWTSettings {
-    pub fn get_keys(&self) -> JWTKeys {
-        let secret = self.secret.expose_secret().as_bytes();
-
-        JWTKeys {
-            encoding: EncodingKey::from_secret(secret),
-            decoding: DecodingKey::from_secret(secret),
-        }
-    }
-}
-
 #[derive(Deserialize)]
 pub struct ApplicationSettings {
     pub host: String,
@@ -132,11 +116,21 @@ pub struct JWTConfig {
     pub keys: JWTKeys,
 }
 
+pub struct JWTKeys {
+    pub encoding: EncodingKey,
+    pub decoding: DecodingKey,
+}
+
 impl JWTConfig {
     fn new() -> Result<JWTConfig, config::ConfigError> {
         let jwt_settings = get_settings()?.jwt;
 
-        let keys = jwt_settings.get_keys();
+        let secret = jwt_settings.secret.expose_secret().as_bytes();
+
+        let keys = JWTKeys {
+            encoding: EncodingKey::from_secret(secret),
+            decoding: DecodingKey::from_secret(secret),
+        };
 
         Ok(Self {
             access_token_exp_seconds: jwt_settings.access_token_exp_seconds,
