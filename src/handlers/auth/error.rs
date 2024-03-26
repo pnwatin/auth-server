@@ -19,7 +19,11 @@ impl IntoResponse for AuthError {
             AuthError::InvalidToken => (StatusCode::UNAUTHORIZED).into_response(),
             // TODO: mitigate this privacy risk (return 201 and send confirmation mail ?)
             AuthError::EmailTaken => (StatusCode::CONFLICT).into_response(),
-            AuthError::UnexpectedError(_) => (StatusCode::INTERNAL_SERVER_ERROR).into_response(),
+            AuthError::UnexpectedError(e) => {
+                tracing::error!("Unexpected error : {:?}", e);
+
+                (StatusCode::INTERNAL_SERVER_ERROR).into_response()
+            }
         }
     }
 }
