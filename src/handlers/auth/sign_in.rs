@@ -10,7 +10,7 @@ use crate::{domain::Email, settings::JWTSettings, telemetry::spawn_blocking_with
 
 use super::{AccessToken, AuthError, RefreshToken, TokensPair, TokensResponse};
 
-#[tracing::instrument(name = "SIGN IN", skip(payload, jwt_settings))]
+#[tracing::instrument(name = "HANDLER - SIGN IN", skip(payload, jwt_settings))]
 pub async fn sign_in_handler(
     Extension(pool): Extension<PgPool>,
     Extension(jwt_settings): Extension<JWTSettings>,

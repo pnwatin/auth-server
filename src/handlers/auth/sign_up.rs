@@ -10,7 +10,7 @@ use crate::domain::Email;
 
 use super::AuthError;
 
-#[tracing::instrument(name = "SIGN UP", skip(pool, payload))]
+#[tracing::instrument(name = "HANDLER - SIGN UP", skip(pool, payload))]
 pub async fn sign_up_handler(
     Extension(pool): Extension<PgPool>,
     Json(payload): Json<SignUpPayload>,

@@ -7,7 +7,7 @@ use crate::settings::JWTSettings;
 
 use super::{AccessToken, AuthError, RefreshToken, Token, TokensPair, TokensResponse};
 
-#[tracing::instrument(name = "REFRESH TOKENS", skip(pool, jwt_settings, payload))]
+#[tracing::instrument(name = "HANDLER - REFRESH TOKENS", skip(pool, jwt_settings, payload))]
 pub async fn refresh_tokens_handler(
     Extension(pool): Extension<PgPool>,
     Extension(jwt_settings): Extension<JWTSettings>,
