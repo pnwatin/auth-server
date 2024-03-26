@@ -15,20 +15,13 @@ pub async fn sign_up_handler(
     Extension(pool): Extension<PgPool>,
     Json(payload): Json<SignUpPayload>,
 ) -> Result<impl IntoResponse, AuthError> {
-    let password_salt = SaltString::generate(rand::thread_rng());
-    let password_hash = Secret::new(
-        Argon2::default()
-            .hash_password(payload.password.expose_secret().as_bytes(), &password_salt)
-            .with_context(|| "Failed to hash password.")
-            .map_err(AuthError::UnexpectedError)?
-            .to_string(),
-    );
+    let password_hash = hash_password(payload.password).context("Failed to hash password.")?;
 
-    let _user_id = insert_user(&payload.email, password_hash, &pool)
+    insert_user(&payload.email, password_hash, &pool)
         .await
         .map_err(|e| match e {
             sqlx::Error::Database(err) if err.is_unique_violation() => AuthError::EmailTaken,
-            _ => AuthError::UnexpectedError(e.into()),
+            e => e.into(),
         })?;
 
     Ok(StatusCode::CREATED)
@@ -52,13 +45,23 @@ async fn insert_user(
         password_hash.expose_secret()
     )
     .execute(pool)
-    .await
-    .map_err(|e| {
-        tracing::error!("Failed to execute query : {:?}", e);
-        e
-    })?;
+    .await?;
 
     Ok(user_id)
+}
+
+#[tracing::instrument(name = "HASH PASSWORD", skip(password))]
+pub fn hash_password(
+    password: Secret<String>,
+) -> Result<Secret<String>, argon2::password_hash::Error> {
+    let password_salt = SaltString::generate(rand::thread_rng());
+    let password_hash = Secret::new(
+        Argon2::default()
+            .hash_password(password.expose_secret().as_bytes(), &password_salt)?
+            .to_string(),
+    );
+
+    Ok(password_hash)
 }
 
 #[derive(Deserialize)]

@@ -138,8 +138,7 @@ impl RefreshToken {
                 self.claims().family
             )
             .execute(pool)
-            .await
-            .context("Couldn't delete invalid token family.")?;
+            .await?;
 
             return Err(AuthError::InvalidToken);
         }
@@ -203,6 +202,7 @@ pub struct TokensResponse {
 
 impl TryFrom<TokensPair> for TokensResponse {
     type Error = jsonwebtoken::errors::Error;
+
     fn try_from(value: TokensPair) -> Result<Self, Self::Error> {
         let access_token = value.access_token.encode()?;
         let refresh_token = value.refresh_token.encode()?;

@@ -29,10 +29,7 @@ async fn refresh_tokens(refresh_token: &str, pool: &PgPool) -> Result<TokensPair
         .validate(pool)
         .await?;
 
-    let refresh_token = RefreshToken::new(user_id, family)
-        .save(pool)
-        .await
-        .context("Couldn't save refresh token.")?;
+    let refresh_token = RefreshToken::new(user_id, family).save(pool).await?;
 
     let access_token = AccessToken::new(user_id);
 

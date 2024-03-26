@@ -25,13 +25,12 @@ pub async fn sign_in_handler(
 }
 
 #[tracing::instrument(name = "GENERATE TOKENS", skip(user_id, pool))]
-async fn generate_tokens(user_id: Uuid, pool: &PgPool) -> Result<TokensPair, AuthError> {
+async fn generate_tokens(user_id: Uuid, pool: &PgPool) -> Result<TokensPair, sqlx::Error> {
     let access_token = AccessToken::new(user_id);
 
     let refresh_token = RefreshToken::new(user_id, Uuid::new_v4())
         .save(pool)
-        .await
-        .context("Failed to save refresh token.")?;
+        .await?;
 
     Ok(TokensPair {
         access_token,
@@ -53,10 +52,7 @@ async fn validate_credentials(
     );
 
     if let Some((stored_user_id, stored_password_hash)) =
-        get_stored_credentials(&credentials.email, pool)
-            .await
-            .context("Failed to execute query.")
-            .map_err(AuthError::UnexpectedError)?
+        get_stored_credentials(&credentials.email, pool).await?
     {
         user_id = Some(stored_user_id);
         expected_password_hash = stored_password_hash;
@@ -70,7 +66,7 @@ async fn validate_credentials(
     .map_err(AuthError::UnexpectedError)?
     .await?;
 
-    user_id.ok_or_else(|| AuthError::InvalidCredentials(anyhow::anyhow!("Invalid email.")))
+    user_id.ok_or_else(|| AuthError::InvalidCredentials)
 }
 
 #[tracing::instrument(name = "GET STORED CREDENTIALS", skip(email, pool))]
@@ -87,11 +83,7 @@ async fn get_stored_credentials(
         email.as_ref()
     )
     .fetch_optional(pool)
-    .await
-    .map_err(|e| {
-        tracing::error!("Failed to execute query : {:?}", e);
-        e
-    })?
+    .await?
     .map(|row| (row.id, Secret::new(row.password_hash)));
 
     Ok(row)
@@ -106,16 +98,14 @@ async fn verify_password_hash(
     password_candidate: Secret<String>,
 ) -> Result<(), AuthError> {
     let expected_password_hash = PasswordHash::new(expected_password_hash.expose_secret())
-        .context("Failed to parse hash in PHC string format.")
-        .map_err(AuthError::UnexpectedError)?;
+        .context("Failed to parse hash in PHC string format.")?;
 
     Argon2::default()
         .verify_password(
             password_candidate.expose_secret().as_bytes(),
             &expected_password_hash,
         )
-        .context("Invalid password.")
-        .map_err(AuthError::InvalidCredentials)
+        .map_err(|_| AuthError::InvalidCredentials)
 }
 
 #[derive(Debug, Deserialize)]
