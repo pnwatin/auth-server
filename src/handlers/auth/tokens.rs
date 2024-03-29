@@ -1,7 +1,9 @@
 use anyhow::Context;
-use axum::{response::IntoResponse, Extension, Json};
+use axum::{response::IntoResponse, Extension};
 use serde::Deserialize;
 use sqlx::PgPool;
+
+use crate::extractors::Json;
 
 use super::{AccessToken, AuthError, RefreshToken, Token, TokensPair, TokensResponse};
 
@@ -20,7 +22,7 @@ pub async fn refresh_tokens_handler(
 #[tracing::instrument(name = "REFRESH TOKENS", skip(refresh_token, pool))]
 async fn refresh_tokens(refresh_token: &str, pool: &PgPool) -> Result<TokensPair, AuthError> {
     let refresh_token_claims =
-        RefreshToken::decode(refresh_token).map_err(|_| AuthError::InvalidToken)?;
+        RefreshToken::decode(refresh_token).map_err(|_| AuthError::InvalidRefreshToken)?;
 
     let user_id = refresh_token_claims.sub;
     let family = refresh_token_claims.family;

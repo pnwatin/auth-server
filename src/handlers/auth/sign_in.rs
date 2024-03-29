@@ -1,16 +1,16 @@
 use anyhow::Context;
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
-use axum::{response::IntoResponse, Extension, Json};
+use axum::{response::IntoResponse, Extension};
 use secrecy::{ExposeSecret, Secret};
 use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::{domain::Email, telemetry::spawn_blocking_with_tracing};
+use crate::{domain::Email, extractors::Json, telemetry::spawn_blocking_with_tracing};
 
 use super::{AccessToken, AuthError, RefreshToken, TokensPair, TokensResponse};
 
-#[tracing::instrument(name = "HANDLER - SIGN IN", skip(payload))]
+#[tracing::instrument(name = "HANDLER - SIGN UP", skip(pool, payload))]
 pub async fn sign_in_handler(
     Extension(pool): Extension<PgPool>,
     Json(payload): Json<SignInPayload>,

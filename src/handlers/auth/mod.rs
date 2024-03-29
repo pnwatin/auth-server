@@ -140,7 +140,7 @@ impl RefreshToken {
             .execute(pool)
             .await?;
 
-            return Err(AuthError::InvalidToken);
+            return Err(AuthError::InvalidRefreshToken);
         }
 
         Ok(self)

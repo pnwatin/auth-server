@@ -1,12 +1,12 @@
 use anyhow::Context;
 use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
-use axum::{http::StatusCode, response::IntoResponse, Extension, Json};
+use axum::{http::StatusCode, response::IntoResponse, Extension};
 use secrecy::{ExposeSecret, Secret};
 use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::domain::Email;
+use crate::{domain::Email, extractors::Json};
 
 use super::AuthError;
 
