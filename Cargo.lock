@@ -1118,6 +1118,7 @@ dependencies = [
  "fake",
  "jsonwebtoken",
  "once_cell",
+ "problemdetails",
  "quickcheck",
  "quickcheck_macros",
  "rand",
@@ -1562,6 +1563,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5b40af805b3121feab8a3c29f04d8ad262fa8e0561883e7653e024ae4479e6de"
 
 [[package]]
+name = "problemdetails"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "12a1742b691ab83cfe43b9bab1801c18b5ebac686471d01577a587843d3d421b"
+dependencies = [
+ "axum",
+ "http",
+ "serde",
+ "serde_json",
+ "tower-http",
+]
+
+[[package]]
 name = "proc-macro2"
 version = "1.0.79"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1939,6 +1953,7 @@ version = "1.0.114"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c5f09b1bd632ef549eaa9f60a1f8de742bdbc698e6cee2095fc84dde5f549ae0"
 dependencies = [
+ "indexmap 2.2.5",
  "itoa",
  "ryu",
  "serde",
@@ -2625,6 +2640,7 @@ checksum = "1e9cd434a998747dd2c4276bc96ee2e0c7a2eadf3cae88e52be55a05fa9053f5"
 dependencies = [
  "bitflags 2.5.0",
  "bytes",
+ "futures-util",
  "http",
  "http-body",
  "http-body-util",
