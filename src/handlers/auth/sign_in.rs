@@ -6,15 +6,17 @@ use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::{domain::Email, extractors::Json, telemetry::spawn_blocking_with_tracing};
+use crate::{
+    domain::Email, error::AppError, extractors::Json, telemetry::spawn_blocking_with_tracing,
+};
 
-use super::{AccessToken, AuthError, RefreshToken, TokensPair, TokensResponse};
+use super::{AccessToken, RefreshToken, TokensPair, TokensResponse};
 
 #[tracing::instrument(name = "HANDLER - SIGN UP", skip(pool, payload))]
 pub async fn sign_in_handler(
     Extension(pool): Extension<PgPool>,
     Json(payload): Json<SignInPayload>,
-) -> Result<impl IntoResponse, AuthError> {
+) -> Result<impl IntoResponse, AppError> {
     let user_id = validate_credentials(payload, &pool).await?;
 
     let tokens = generate_tokens(user_id, &pool).await?;
@@ -39,10 +41,7 @@ async fn generate_tokens(user_id: Uuid, pool: &PgPool) -> Result<TokensPair, sql
 }
 
 #[tracing::instrument(name = "VALIDATE CREDENTIALS", skip(credentials, pool))]
-async fn validate_credentials(
-    credentials: SignInPayload,
-    pool: &PgPool,
-) -> Result<Uuid, AuthError> {
+async fn validate_credentials(credentials: SignInPayload, pool: &PgPool) -> Result<Uuid, AppError> {
     let mut user_id = None;
     let mut expected_password_hash = Secret::new(
         "$argon2id$v=19$m=15000,t=2,p=1$\
@@ -63,10 +62,10 @@ async fn validate_credentials(
     })
     .await
     .context("Failed to spawn blocking task.")
-    .map_err(AuthError::UnexpectedError)?
+    .map_err(AppError::UnexpectedError)?
     .await?;
 
-    user_id.ok_or_else(|| AuthError::InvalidCredentials)
+    user_id.ok_or_else(|| AppError::InvalidCredentials)
 }
 
 #[tracing::instrument(name = "GET STORED CREDENTIALS", skip(email, pool))]
@@ -96,7 +95,7 @@ async fn get_stored_credentials(
 async fn verify_password_hash(
     expected_password_hash: Secret<String>,
     password_candidate: Secret<String>,
-) -> Result<(), AuthError> {
+) -> Result<(), AppError> {
     let expected_password_hash = PasswordHash::new(expected_password_hash.expose_secret())
         .context("Failed to parse hash in PHC string format.")?;
 
@@ -105,7 +104,7 @@ async fn verify_password_hash(
             password_candidate.expose_secret().as_bytes(),
             &expected_password_hash,
         )
-        .map_err(|_| AuthError::InvalidCredentials)
+        .map_err(|_| AppError::InvalidCredentials)
 }
 
 #[derive(Debug, Deserialize)]

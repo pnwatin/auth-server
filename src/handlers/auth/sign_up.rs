@@ -6,21 +6,19 @@ use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::{domain::Email, extractors::Json};
-
-use super::AuthError;
+use crate::{domain::Email, error::AppError, extractors::Json};
 
 #[tracing::instrument(name = "HANDLER - SIGN UP", skip(pool, payload))]
 pub async fn sign_up_handler(
     Extension(pool): Extension<PgPool>,
     Json(payload): Json<SignUpPayload>,
-) -> Result<impl IntoResponse, AuthError> {
+) -> Result<impl IntoResponse, AppError> {
     let password_hash = hash_password(payload.password).context("Failed to hash password.")?;
 
     insert_user(&payload.email, password_hash, &pool)
         .await
         .map_err(|e| match e {
-            sqlx::Error::Database(err) if err.is_unique_violation() => AuthError::EmailTaken,
+            sqlx::Error::Database(err) if err.is_unique_violation() => AppError::EmailTaken,
             e => e.into(),
         })?;
 

@@ -3,15 +3,15 @@ use axum::{response::IntoResponse, Extension};
 use serde::Deserialize;
 use sqlx::PgPool;
 
-use crate::extractors::Json;
+use crate::{error::AppError, extractors::Json};
 
-use super::{AccessToken, AuthError, RefreshToken, Token, TokensPair, TokensResponse};
+use super::{AccessToken, RefreshToken, Token, TokensPair, TokensResponse};
 
 #[tracing::instrument(name = "HANDLER - REFRESH TOKENS", skip(pool, payload))]
 pub async fn refresh_tokens_handler(
     Extension(pool): Extension<PgPool>,
     Json(payload): Json<RefreshTokensPayload>,
-) -> Result<impl IntoResponse, AuthError> {
+) -> Result<impl IntoResponse, AppError> {
     let tokens = refresh_tokens(&payload.refresh_token, &pool).await?;
 
     let body = Json(TokensResponse::try_from(tokens).context("Failed to encode tokens.")?);
@@ -20,13 +20,12 @@ pub async fn refresh_tokens_handler(
 }
 
 #[tracing::instrument(name = "REFRESH TOKENS", skip(refresh_token, pool))]
-async fn refresh_tokens(refresh_token: &str, pool: &PgPool) -> Result<TokensPair, AuthError> {
+async fn refresh_tokens(refresh_token: &str, pool: &PgPool) -> Result<TokensPair, AppError> {
     let refresh_token_claims =
-        RefreshToken::decode(refresh_token).map_err(|_| AuthError::InvalidRefreshToken)?;
+        RefreshToken::decode(refresh_token).map_err(|_| AppError::InvalidRefreshToken)?;
 
     let user_id = refresh_token_claims.sub;
     let family = refresh_token_claims.family;
-
     RefreshToken::from(refresh_token_claims)
         .validate(pool)
         .await?;

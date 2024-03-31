@@ -1,4 +1,3 @@
-mod error;
 mod sign_in;
 mod sign_up;
 mod tokens;
@@ -11,9 +10,7 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
 
-pub use error::*;
-
-use crate::settings::JWT_CONFIG;
+use crate::{error::AppError, settings::JWT_CONFIG};
 
 pub fn auth_router() -> Router {
     Router::new()
@@ -119,7 +116,7 @@ impl RefreshToken {
         Ok(self)
     }
 
-    pub async fn validate(self, pool: &PgPool) -> Result<Self, AuthError> {
+    pub async fn validate(self, pool: &PgPool) -> Result<Self, AppError> {
         let result = sqlx::query!(
             r#"
                 SELECT * FROM refresh_tokens WHERE jit = $1; 
@@ -140,7 +137,7 @@ impl RefreshToken {
             .execute(pool)
             .await?;
 
-            return Err(AuthError::InvalidRefreshToken);
+            return Err(AppError::InvalidRefreshToken);
         }
 
         Ok(self)
