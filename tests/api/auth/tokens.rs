@@ -1,4 +1,4 @@
-use matoscout_api::handlers::TokensResponse;
+use auth_server::handlers::TokensResponse;
 use serde_json::json;
 
 use crate::helpers::TestApplication;

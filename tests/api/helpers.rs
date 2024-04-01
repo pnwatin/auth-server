@@ -1,11 +1,11 @@
 use std::net::SocketAddr;
 
-use fake::{Fake, Faker};
-use matoscout_api::{
+use auth_server::{
     settings::{get_settings, DatabaseSettings},
     startup::Application,
     telemetry::{get_subscriber, init_subscriber},
 };
+use fake::{Fake, Faker};
 use once_cell::sync::Lazy;
 use secrecy::Secret;
 use sqlx::{Connection, Executor, PgConnection, PgPool};

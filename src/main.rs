@@ -1,4 +1,4 @@
-use matoscout_api::{
+use auth_server::{
     settings::get_settings,
     startup::Application,
     telemetry::{get_subscriber, init_subscriber},

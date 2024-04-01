@@ -1,8 +1,8 @@
-use jsonwebtoken::Validation;
-use matoscout_api::{
+use auth_server::{
     handlers::{AccessToken, RefreshToken, Token, TokensResponse},
     settings::JWT_CONFIG,
 };
+use jsonwebtoken::Validation;
 use serde_json::json;
 
 use crate::helpers::TestApplication;

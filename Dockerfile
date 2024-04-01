@@ -23,7 +23,7 @@ RUN apt-get update -y \
   && apt-get autoremove -y \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/*
-COPY --from=builder /app/target/release/matoscout matoscout
+COPY --from=builder /app/target/release/auth-server auth-server
 COPY config config
 ENV APP_ENVIRONMENT production
-ENTRYPOINT [ "./matoscout" ]
+ENTRYPOINT [ "./auth-server" ]

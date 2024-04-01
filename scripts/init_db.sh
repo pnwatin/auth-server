@@ -17,11 +17,11 @@ fi
 
 DB_USER="${POSTGRES_USER:=postgres}"
 DB_PASSWORD="${POSTGRES_PASSWORD:=password}"
-DB_NAME="${POSTGRES_DB:=matoscout}"
+DB_NAME="${POSTGRES_DB:=auth}"
 DB_PORT="${POSTGRES_PORT:=5432}"
 DB_HOST="${POSTGRES_HOST:=localhost}"
 
-CONTAINER_NAME="${CONTAINER_NAME:=matoscout}"
+CONTAINER_NAME="${CONTAINER_NAME:=auth}"
 
 if [[ -z "${SKIP_DOCKER}" ]]; then
 	if docker container inspect "$CONTAINER_NAME" &>/dev/null; then
