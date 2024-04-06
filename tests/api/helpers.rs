@@ -8,6 +8,7 @@ use auth_server::{
 use fake::{Fake, Faker};
 use once_cell::sync::Lazy;
 use secrecy::Secret;
+use serde_json::{json, Value};
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use tracing_subscriber::EnvFilter;
 use uuid::Uuid;
@@ -28,6 +29,12 @@ pub struct TestApplication {
     pub address: SocketAddr,
     pub base_url: String,
     pub pool: PgPool,
+    pub test_user: TestUser,
+}
+
+pub struct TestUser {
+    pub email: String,
+    pub password: String,
 }
 
 impl TestApplication {
@@ -66,6 +73,10 @@ impl TestApplication {
             address,
             base_url,
             pool,
+            test_user: TestUser {
+                email: "test@domain.com".into(),
+                password: "password".into(),
+            },
         }
     }
 
@@ -83,6 +94,38 @@ impl TestApplication {
 
     pub fn post(&self, path: impl Into<String>) -> reqwest::RequestBuilder {
         self.client().post(self.format_url(path))
+    }
+
+    pub async fn sign_in(&self) -> reqwest::Response {
+        self.sign_in_with_payload(&json!({
+            "email": self.test_user.email,
+            "password": self.test_user.password
+        }))
+        .await
+    }
+
+    pub async fn sign_in_with_payload(&self, payload: &Value) -> reqwest::Response {
+        self.post("/auth/sign-in")
+            .json(payload)
+            .send()
+            .await
+            .expect("Failed to execute request.")
+    }
+
+    pub async fn sign_up(&self) -> reqwest::Response {
+        self.sign_up_with_payload(&json!({
+        "email": self.test_user.email,
+        "password": self.test_user.password
+        }))
+        .await
+    }
+
+    pub async fn sign_up_with_payload(&self, payload: &Value) -> reqwest::Response {
+        self.post("/auth/sign-up")
+            .json(payload)
+            .send()
+            .await
+            .expect("Failed to execute request.")
     }
 }
 

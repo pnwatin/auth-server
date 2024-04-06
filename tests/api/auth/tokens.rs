@@ -43,27 +43,9 @@ async fn refresh_tokens_with_invalid_refresh_token_returns_401() {
 async fn refresh_tokens_with_used_refresh_token_invalids_token_family() {
     let app = TestApplication::spawn().await;
 
-    let email = "test@domain.com";
-    let password = "password";
+    app.sign_up().await;
 
-    app.post("/auth/sign-up")
-        .json(&json!({
-        "email": email,
-        "password": password
-        }))
-        .send()
-        .await
-        .expect("Failed to execute request.");
-
-    let sign_in_response = app
-        .post("/auth/sign-in")
-        .json(&json!({
-            "email": email,
-            "password": password
-        }))
-        .send()
-        .await
-        .expect("Failed to execute request.");
+    let sign_in_response = app.sign_in().await;
 
     assert_eq!(200, sign_in_response.status().as_u16());
 

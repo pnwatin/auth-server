@@ -11,27 +11,9 @@ use crate::helpers::TestApplication;
 async fn sign_in_with_valid_credentials_return_valid_tokens() {
     let app = TestApplication::spawn().await;
 
-    let email = "test@domain.com";
-    let password = "password";
+    app.sign_up().await;
 
-    app.post("/auth/sign-up")
-        .json(&json!({
-        "email": email,
-        "password": password
-        }))
-        .send()
-        .await
-        .expect("Failed to execute request.");
-
-    let response = app
-        .post("/auth/sign-in")
-        .json(&json!({
-            "email": email,
-            "password": password
-        }))
-        .send()
-        .await
-        .expect("Failed to execute request.");
+    let response = app.sign_in().await;
 
     assert_eq!(200, response.status().as_u16());
 
@@ -52,27 +34,9 @@ async fn sign_in_with_valid_credentials_return_valid_tokens() {
 async fn sign_in_with_valid_credentials_persists_refresh_token() {
     let app = TestApplication::spawn().await;
 
-    let email = "test@domain.com";
-    let password = "password";
+    app.sign_up().await;
 
-    app.post("/auth/sign-up")
-        .json(&json!({
-        "email": email,
-        "password": password
-        }))
-        .send()
-        .await
-        .expect("Failed to execute request.");
-
-    let response = app
-        .post("/auth/sign-in")
-        .json(&json!({
-            "email": email,
-            "password": password
-        }))
-        .send()
-        .await
-        .expect("Failed to execute request.");
+    let response = app.sign_in().await;
 
     assert_eq!(200, response.status().as_u16());
 
@@ -96,27 +60,9 @@ async fn sign_in_with_valid_credentials_persists_refresh_token() {
 async fn sign_in_with_valid_credentials_return_tokens_that_expire() {
     let app = TestApplication::spawn().await;
 
-    let email = "test@domain.com";
-    let password = "password";
+    app.sign_up().await;
 
-    app.post("/auth/sign-up")
-        .json(&json!({
-        "email": email,
-        "password": password
-        }))
-        .send()
-        .await
-        .expect("Failed to execute request.");
-
-    let response = app
-        .post("/auth/sign-in")
-        .json(&json!({
-            "email": email,
-            "password": password
-        }))
-        .send()
-        .await
-        .expect("Failed to execute request.");
+    let response = app.sign_in().await;
 
     assert_eq!(200, response.status().as_u16());
 
@@ -144,27 +90,9 @@ async fn sign_in_with_valid_credentials_return_tokens_that_expire() {
 async fn sign_in_with_valid_credentials_return_200() {
     let app = TestApplication::spawn().await;
 
-    let email = "test@domain.com";
-    let password = "password";
+    app.sign_up().await;
 
-    app.post("/auth/sign-up")
-        .json(&json!({
-        "email": email,
-        "password": password
-        }))
-        .send()
-        .await
-        .expect("Failed to execute request.");
-
-    let response = app
-        .post("/auth/sign-in")
-        .json(&json!({
-            "email": email,
-            "password": password
-        }))
-        .send()
-        .await
-        .expect("Failed to execute request.");
+    let response = app.sign_in().await;
 
     assert_eq!(200, response.status().as_u16());
 }
@@ -174,14 +102,11 @@ async fn sign_in_with_non_existing_email_return_401() {
     let app = TestApplication::spawn().await;
 
     let response = app
-        .post("/auth/sign-in")
-        .json(&json!({
+        .sign_in_with_payload(&json!({
             "email": "nonexisting@domain.com",
-            "password": "password"
+            "password": app.test_user.password
         }))
-        .send()
-        .await
-        .expect("Failed to execute request.");
+        .await;
 
     assert_eq!(401, response.status().as_u16());
 }
@@ -190,26 +115,14 @@ async fn sign_in_with_non_existing_email_return_401() {
 async fn sign_in_with_non_invalid_password_return_401() {
     let app = TestApplication::spawn().await;
 
-    let email = "test@domain.com";
-
-    app.post("/auth/sign-up")
-        .json(&json!({
-        "email": email,
-        "password": "correct-password"
-        }))
-        .send()
-        .await
-        .expect("Failed to execute request.");
+    app.sign_up().await;
 
     let response = app
-        .post("/auth/sign-in")
-        .json(&json!({
-            "email": email,
+        .sign_in_with_payload(&json!({
+            "email": app.test_user.email,
             "password": "wrong-password"
         }))
-        .send()
-        .await
-        .expect("Failed to execute request.");
+        .await;
 
     assert_eq!(401, response.status().as_u16());
 }
@@ -229,12 +142,7 @@ async fn sign_in_with_invalid_data_returns_422() {
     ];
 
     for (invalid_body, error_message) in test_cases {
-        let response = app
-            .post("/auth/sign-in")
-            .json(&invalid_body)
-            .send()
-            .await
-            .expect("Failed to execute request.");
+        let response = app.sign_in_with_payload(&invalid_body).await;
 
         assert_eq!(
             422,
