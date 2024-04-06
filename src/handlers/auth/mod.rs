@@ -1,4 +1,5 @@
 mod sign_in;
+mod sign_out;
 mod sign_up;
 mod tokens;
 
@@ -15,6 +16,7 @@ pub fn auth_router() -> Router {
     Router::new()
         .route("/sign-up", post(sign_up::sign_up_handler))
         .route("/sign-in", post(sign_in::sign_in_handler))
+        .route("/sign-out", post(sign_out::sign_out_handler))
         .nest(
             "/tokens",
             Router::new().route("/refresh", post(tokens::refresh_tokens_handler)),
