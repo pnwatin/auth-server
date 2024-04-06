@@ -26,9 +26,12 @@ async fn refresh_tokens(refresh_token: &str, pool: &PgPool) -> Result<TokensPair
 
     let user_id = refresh_token_claims.sub;
     let family = refresh_token_claims.family;
+
     RefreshToken::from(refresh_token_claims)
         .validate(pool)
-        .await?;
+        .await
+        .context("Failed to execute query.")?
+        .ok_or(AppError::InvalidRefreshToken)?;
 
     let refresh_token = RefreshToken::new(user_id, family).save(pool).await?;
 

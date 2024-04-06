@@ -2,7 +2,6 @@ mod sign_in;
 mod sign_up;
 mod tokens;
 
-use anyhow::Context;
 use axum::{routing::post, Router};
 use chrono::{DateTime, Utc};
 use jsonwebtoken::{decode, encode, Header, Validation};
@@ -10,7 +9,7 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::{error::AppError, settings::JWT_CONFIG};
+use crate::settings::JWT_CONFIG;
 
 pub fn auth_router() -> Router {
     Router::new()
@@ -117,7 +116,7 @@ impl RefreshToken {
         Ok(self)
     }
 
-    pub async fn validate(self, pool: &PgPool) -> Result<Self, AppError> {
+    pub async fn validate(self, pool: &PgPool) -> Result<Option<Self>, sqlx::Error> {
         let result = sqlx::query!(
             r#"
                 SELECT * FROM refresh_tokens WHERE jit = $1; 
@@ -125,23 +124,28 @@ impl RefreshToken {
             self.claims().jit
         )
         .fetch_optional(pool)
-        .await
-        .context("Failed to fetch execute query")?;
+        .await?;
 
         if result.is_none() {
-            sqlx::query!(
-                r#"
-                    DELETE FROM refresh_tokens WHERE family = $1;
-                "#,
-                self.claims().family
-            )
-            .execute(pool)
-            .await?;
+            self.invalidate_family(pool).await?;
 
-            return Err(AppError::InvalidRefreshToken);
+            return Ok(None);
         }
 
-        Ok(self)
+        Ok(Some(self))
+    }
+
+    pub async fn invalidate_family(&self, pool: &PgPool) -> Result<(), sqlx::Error> {
+        sqlx::query!(
+            r#"
+                DELETE FROM refresh_tokens WHERE family = $1;
+            "#,
+            self.claims().family
+        )
+        .execute(pool)
+        .await?;
+
+        Ok(())
     }
 }
 
