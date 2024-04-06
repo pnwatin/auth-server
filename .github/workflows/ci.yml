@@ -44,7 +44,7 @@ jobs:
           SKIP_DOCKER=true ./scripts/init_db.sh
       - name: cargo sqlx prepare check
         run: |
-          cargo sqlx prepare --workspace --check
+          cargo sqlx prepare --workspace --check -- --all-targets
       - name: cargo clippy
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings
       - name: cargo fmt
@@ -80,6 +80,6 @@ jobs:
           SKIP_DOCKER=true ./scripts/init_db.sh
       - name: cargo sqlx prepare check
         run: |
-          cargo sqlx prepare --workspace --check
+          cargo sqlx prepare --workspace --check -- --all-targets
       - name: cargo test
         run: cargo test
