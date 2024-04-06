@@ -99,7 +99,8 @@ impl RefreshToken {
                 INSERT INTO refresh_tokens (id, user_id, jit, family, expires_at, created_at)
                 VALUES ($1, $2, $3, $4, $5, $6)
                 ON CONFLICT (family) DO UPDATE
-                SET jit = EXCLUDED.jit,
+                SET id = EXCLUDED.id,
+                    jit = EXCLUDED.jit,
                     expires_at = EXCLUDED.expires_at,
                     created_at = EXCLUDED.created_at;
             "#,
