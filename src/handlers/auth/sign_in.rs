@@ -31,7 +31,11 @@ pub async fn sign_in_handler(
 }
 
 #[tracing::instrument(name = "GENERATE TOKENS", skip(user_id, pool, metadata))]
-async fn generate_tokens(user_id: Uuid, metadata: &RequestMetadata, pool: &PgPool) -> Result<TokensPair, sqlx::Error> {
+async fn generate_tokens(
+    user_id: Uuid,
+    metadata: &RequestMetadata,
+    pool: &PgPool,
+) -> Result<TokensPair, sqlx::Error> {
     let access_token = AccessToken::new(user_id);
 
     let refresh_token = RefreshToken::new(user_id, Uuid::new_v4())
