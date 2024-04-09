@@ -13,6 +13,8 @@ CREATE TABLE refresh_tokens(
     REFERENCES users (id),
   jit UUID NOT NULL UNIQUE,
   family UUID NOT NULL UNIQUE,
+  user_agent TEXT,
+  ip_address TEXT,
   expires_at TIMESTAMPTZ NOT NULL,
   created_at TIMESTAMPTZ NOT NULL
 );
