@@ -3,6 +3,7 @@ use auth_server::{
     settings::JWT_CONFIG,
 };
 use jsonwebtoken::Validation;
+use reqwest::header::USER_AGENT;
 use serde_json::json;
 
 use crate::helpers::TestApplication;
@@ -54,6 +55,36 @@ async fn sign_in_with_valid_credentials_persists_refresh_token() {
         .expect("Failed to fetch new refresh_token");
 
     assert_eq!(saved_refresh_token.jit, refresh_token.jit);
+}
+
+#[tokio::test]
+async fn sign_in_persists_refresh_token_metadata() {
+    let app = TestApplication::spawn().await;
+
+    app.sign_up().await;
+
+    let user_agent = "user agent";
+
+    app.post("/auth/sign-in")
+        .json(&json!({
+            "email": app.test_user.email,
+            "password": app.test_user.password
+        }))
+        .header(USER_AGENT, user_agent)
+        .send()
+        .await
+        .expect("Failed to execute request.");
+
+    let saved_refresh_token = sqlx::query!("SELECT * from refresh_tokens")
+        .fetch_one(&app.pool)
+        .await
+        .expect("Failed to fetch new refresh_token");
+
+    assert_eq!(saved_refresh_token.user_agent, Some(user_agent.to_string()));
+    assert_eq!(
+        saved_refresh_token.ip_address,
+        Some(app.address.ip().to_string())
+    );
 }
 
 #[tokio::test]
