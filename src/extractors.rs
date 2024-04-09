@@ -1,8 +1,9 @@
-use std::error::Error;
+use std::{error::Error, net::SocketAddr};
 
 use axum::{
     async_trait,
-    extract::{rejection::JsonRejection, FromRequest, Request},
+    extract::{rejection::JsonRejection, ConnectInfo, FromRequest, FromRequestParts, Request},
+    http::header::USER_AGENT,
     response::IntoResponse,
 };
 use problemdetails::Problem;
@@ -45,5 +46,38 @@ where
 {
     fn into_response(self) -> axum::response::Response {
         axum::Json(self.0).into_response()
+    }
+}
+
+pub struct RequestMetadata {
+    pub ip_address: Option<String>,
+    pub user_agent: Option<String>,
+}
+
+#[async_trait]
+impl<S> FromRequestParts<S> for RequestMetadata
+where
+    S: Send + Sync,
+{
+    type Rejection = Problem;
+    async fn from_request_parts(
+        parts: &mut axum::http::request::Parts,
+        state: &S,
+    ) -> Result<Self, Self::Rejection> {
+        let ip_address = ConnectInfo::<SocketAddr>::from_request_parts(parts, state)
+            .await
+            .ok()
+            .map(|addr| addr.to_string());
+
+        let user_agent = parts
+            .headers
+            .get(USER_AGENT)
+            .and_then(|ua| ua.to_str().ok())
+            .map(|ua| ua.to_string());
+
+        Ok(Self {
+            ip_address,
+            user_agent,
+        })
     }
 }
