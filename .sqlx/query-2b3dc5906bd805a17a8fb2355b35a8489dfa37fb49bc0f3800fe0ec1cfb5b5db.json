@@ -25,11 +25,21 @@
       },
       {
         "ordinal": 4,
+        "name": "user_agent",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "ip_address",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
         "name": "expires_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 5,
+        "ordinal": 7,
         "name": "created_at",
         "type_info": "Timestamptz"
       }
@@ -42,6 +52,8 @@
       false,
       false,
       false,
+      true,
+      true,
       false,
       false
     ]
