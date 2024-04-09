@@ -67,7 +67,7 @@ where
         let ip_address = ConnectInfo::<SocketAddr>::from_request_parts(parts, state)
             .await
             .ok()
-            .map(|addr| addr.to_string());
+            .map(|addr| addr.ip().to_string());
 
         let user_agent = parts
             .headers
