@@ -81,7 +81,10 @@ impl TestApplication {
     }
 
     pub fn client(&self) -> reqwest::Client {
-        reqwest::Client::new()
+        reqwest::Client::builder()
+            .local_address(self.address.ip())
+            .build()
+            .expect("Failed to build client")
     }
 
     pub fn format_url(&self, path: impl Into<String>) -> String {
