@@ -17,7 +17,7 @@ name = "auth-server"
 tokio = { version = "1", features = ["full"] }
 
 # http
-axum = { version = "0.7.4", features = ["tracing"] }
+axum = { version = "0.7.4", features = ["tracing", "tokio"] }
 tower = { version = "0.4.13" }
 tower-http = { version = "0.5", features = ["trace", "request-id", "util"] }
 problemdetails = { version = "0.4.1", features = ["axum"] }
@@ -47,7 +47,7 @@ argon2 = { version = "0.5.3", features = ["std"] }
 jsonwebtoken = { version = "9.3.0" }
 
 # validations
-validator = { version = "0.17" }
+validator = { version = "0.18" }
 
 # errors
 thiserror = { version = "1" }

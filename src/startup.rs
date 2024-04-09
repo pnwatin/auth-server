@@ -67,7 +67,11 @@ impl Application {
     pub async fn run_until_stopped(self) -> Result<(), std::io::Error> {
         tracing::debug!("Listening on {}", self.listener.local_addr().unwrap());
 
-        axum::serve(self.listener, self.app.into_make_service()).await
+        axum::serve(
+            self.listener,
+            self.app.into_make_service_with_connect_info::<SocketAddr>(),
+        )
+        .await
     }
 }
 
