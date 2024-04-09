@@ -10,7 +10,7 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::settings::JWT_CONFIG;
+use crate::{extractors::RequestMetadata, settings::JWT_CONFIG};
 
 pub fn auth_router() -> Router {
     Router::new()
@@ -90,18 +90,24 @@ impl RefreshToken {
         Self(claims)
     }
 
-    pub async fn save(self, pool: &PgPool) -> Result<Self, sqlx::Error> {
+    pub async fn save(
+        self,
+        metadata: &RequestMetadata,
+        pool: &PgPool,
+    ) -> Result<Self, sqlx::Error> {
         let claims = self.claims();
 
         let expires_at = DateTime::from_timestamp(claims.exp, 0);
 
         sqlx::query!(
             r#"
-                INSERT INTO refresh_tokens (id, user_id, jit, family, expires_at, created_at)
-                VALUES ($1, $2, $3, $4, $5, $6)
+                INSERT INTO refresh_tokens (id, user_id, jit, family, ip_address, user_agent, expires_at, created_at)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
                 ON CONFLICT (family) DO UPDATE
                 SET id = EXCLUDED.id,
                     jit = EXCLUDED.jit,
+                    ip_address = EXCLUDED.ip_address,
+                    user_agent = EXCLUDED.user_agent,
                     expires_at = EXCLUDED.expires_at,
                     created_at = EXCLUDED.created_at;
             "#,
@@ -109,6 +115,8 @@ impl RefreshToken {
             claims.sub,
             claims.jit,
             claims.family,
+            metadata.ip_address,
+            metadata.user_agent,
             expires_at,
             Utc::now()
         )

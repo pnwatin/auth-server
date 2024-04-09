@@ -7,31 +7,35 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::{
-    domain::Email, error::AppError, extractors::Json, telemetry::spawn_blocking_with_tracing,
+    domain::Email,
+    error::AppError,
+    extractors::{Json, RequestMetadata},
+    telemetry::spawn_blocking_with_tracing,
 };
 
 use super::{AccessToken, RefreshToken, TokensPair, TokensResponse};
 
-#[tracing::instrument(name = "HANDLER - SIGN UP", skip(pool, payload))]
+#[tracing::instrument(name = "HANDLER - SIGN UP", skip(pool, payload, metadata))]
 pub async fn sign_in_handler(
     Extension(pool): Extension<PgPool>,
+    metadata: RequestMetadata,
     Json(payload): Json<SignInPayload>,
 ) -> Result<impl IntoResponse, AppError> {
     let user_id = validate_credentials(payload, &pool).await?;
 
-    let tokens = generate_tokens(user_id, &pool).await?;
+    let tokens = generate_tokens(user_id, &metadata, &pool).await?;
 
     let body = Json(TokensResponse::try_from(tokens).context("Couldn't encode tokens.")?);
 
     Ok(body)
 }
 
-#[tracing::instrument(name = "GENERATE TOKENS", skip(user_id, pool))]
-async fn generate_tokens(user_id: Uuid, pool: &PgPool) -> Result<TokensPair, sqlx::Error> {
+#[tracing::instrument(name = "GENERATE TOKENS", skip(user_id, pool, metadata))]
+async fn generate_tokens(user_id: Uuid, metadata: &RequestMetadata, pool: &PgPool) -> Result<TokensPair, sqlx::Error> {
     let access_token = AccessToken::new(user_id);
 
     let refresh_token = RefreshToken::new(user_id, Uuid::new_v4())
-        .save(pool)
+        .save(metadata, pool)
         .await?;
 
     Ok(TokensPair {
