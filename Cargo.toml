@@ -33,7 +33,7 @@ sqlx = { version = "0.7.4", features = [
 
 # serde
 serde = { version = "1.0.198", features = ["derive"] }
-serde_with = { version = "3.7.0" }
+serde_with = { version = "3.8.1" }
 serde-aux = { version = "4.5.0" }
 serde_json = { version = "1.0.116" }
 
@@ -50,8 +50,8 @@ jsonwebtoken = { version = "9.3.0" }
 validator = { version = "0.18.1" }
 
 # errors
-thiserror = { version = "1.0.59" }
-anyhow = { version = "1.0.82" }
+thiserror = { version = "1.0.60" }
+anyhow = { version = "1.0.83" }
 
 # utils
 chrono = { version = "0.4.38", features = ["serde"] }
