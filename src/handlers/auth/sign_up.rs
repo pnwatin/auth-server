@@ -1,7 +1,7 @@
 use anyhow::Context;
 use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
 use axum::{http::StatusCode, response::IntoResponse, Extension};
-use secrecy::{ExposeSecret, Secret};
+use secrecy::{ExposeSecret, SecretString};
 use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -28,7 +28,7 @@ pub async fn sign_up_handler(
 #[tracing::instrument(name = "INSERT NEW USER", skip(email, password_hash, pool))]
 async fn insert_user(
     email: &Email,
-    password_hash: Secret<String>,
+    password_hash: SecretString,
     pool: &PgPool,
 ) -> Result<Uuid, sqlx::Error> {
     let user_id = Uuid::new_v4();
@@ -49,11 +49,9 @@ async fn insert_user(
 }
 
 #[tracing::instrument(name = "HASH PASSWORD", skip(password))]
-pub fn hash_password(
-    password: Secret<String>,
-) -> Result<Secret<String>, argon2::password_hash::Error> {
+pub fn hash_password(password: SecretString) -> Result<SecretString, argon2::password_hash::Error> {
     let password_salt = SaltString::generate(rand::thread_rng());
-    let password_hash = Secret::new(
+    let password_hash = SecretString::from(
         Argon2::default()
             .hash_password(password.expose_secret().as_bytes(), &password_salt)?
             .to_string(),
@@ -65,5 +63,5 @@ pub fn hash_password(
 #[derive(Deserialize)]
 pub struct SignUpPayload {
     pub email: Email,
-    pub password: Secret<String>,
+    pub password: SecretString,
 }

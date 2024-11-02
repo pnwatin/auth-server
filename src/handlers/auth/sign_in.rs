@@ -1,7 +1,7 @@
 use anyhow::Context;
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use axum::{response::IntoResponse, Extension};
-use secrecy::{ExposeSecret, Secret};
+use secrecy::{ExposeSecret, SecretString};
 use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -51,11 +51,10 @@ async fn generate_tokens(
 #[tracing::instrument(name = "VALIDATE CREDENTIALS", skip(credentials, pool))]
 async fn validate_credentials(credentials: SignInPayload, pool: &PgPool) -> Result<Uuid, AppError> {
     let mut user_id = None;
-    let mut expected_password_hash = Secret::new(
+    let mut expected_password_hash = SecretString::from(
         "$argon2id$v=19$m=15000,t=2,p=1$\
         gZiV/M1gPc22ElAH/Jh1Hw$\
-        CWOrkoo7oJBQ/iyh7uJ0LO2aLEfrHwTWllSAxT0zRno"
-            .to_string(),
+        CWOrkoo7oJBQ/iyh7uJ0LO2aLEfrHwTWllSAxT0zRno",
     );
 
     if let Some((stored_user_id, stored_password_hash)) =
@@ -80,7 +79,7 @@ async fn validate_credentials(credentials: SignInPayload, pool: &PgPool) -> Resu
 async fn get_stored_credentials(
     email: &Email,
     pool: &PgPool,
-) -> Result<Option<(Uuid, Secret<String>)>, sqlx::Error> {
+) -> Result<Option<(Uuid, SecretString)>, sqlx::Error> {
     let row = sqlx::query!(
         r#"
             SELECT id, password_hash
@@ -91,7 +90,7 @@ async fn get_stored_credentials(
     )
     .fetch_optional(pool)
     .await?
-    .map(|row| (row.id, Secret::new(row.password_hash)));
+    .map(|row| (row.id, SecretString::from(row.password_hash)));
 
     Ok(row)
 }
@@ -101,8 +100,8 @@ async fn get_stored_credentials(
     skip(expected_password_hash, password_candidate)
 )]
 async fn verify_password_hash(
-    expected_password_hash: Secret<String>,
-    password_candidate: Secret<String>,
+    expected_password_hash: SecretString,
+    password_candidate: SecretString,
 ) -> Result<(), AppError> {
     let expected_password_hash = PasswordHash::new(expected_password_hash.expose_secret())
         .context("Failed to parse hash in PHC string format.")?;
@@ -118,5 +117,5 @@ async fn verify_password_hash(
 #[derive(Debug, Deserialize)]
 pub struct SignInPayload {
     pub email: Email,
-    pub password: Secret<String>,
+    pub password: SecretString,
 }

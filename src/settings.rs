@@ -1,6 +1,6 @@
 use jsonwebtoken::{DecodingKey, EncodingKey};
 use once_cell::sync::Lazy;
-use secrecy::{ExposeSecret, Secret};
+use secrecy::{ExposeSecret, SecretString};
 use serde::Deserialize;
 use serde_aux::field_attributes::deserialize_number_from_string;
 use sqlx::{postgres::PgConnectOptions, ConnectOptions};
@@ -15,7 +15,7 @@ pub struct Settings {
 
 #[derive(Deserialize, Clone)]
 pub struct JWTSettings {
-    pub secret: Secret<String>,
+    pub secret: SecretString,
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub access_token_exp_seconds: i64,
     #[serde(deserialize_with = "deserialize_number_from_string")]
@@ -35,7 +35,7 @@ pub struct DatabaseSettings {
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub port: u16,
     pub username: String,
-    pub password: Secret<String>,
+    pub password: SecretString,
     pub database_name: String,
 }
 
