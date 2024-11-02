@@ -7,7 +7,7 @@ use auth_server::{
 };
 use fake::{Fake, Faker};
 use once_cell::sync::Lazy;
-use secrecy::Secret;
+use secrecy::SecretString;
 use serde_json::{json, Value};
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use tracing_subscriber::EnvFilter;
@@ -47,7 +47,7 @@ impl TestApplication {
 
             settings.database.database_name = Uuid::new_v4().to_string();
             settings.application.port = 0;
-            settings.jwt.secret = Secret::new(Faker.fake());
+            settings.jwt.secret = SecretString::from(Faker.fake::<String>());
 
             settings
         };
