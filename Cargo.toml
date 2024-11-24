@@ -14,12 +14,12 @@ name = "auth-server"
 
 [dependencies]
 # tokio
-tokio = { version = "1.41.0", features = ["full"] }
+tokio = { version = "1.41.1", features = ["full"] }
 
 # http
-axum = { version = "0.7.7", features = ["tracing", "tokio"] }
+axum = { version = "0.7.9", features = ["tracing", "tokio"] }
 tower = { version = "0.5.1" }
-tower-http = { version = "0.6.1", features = ["trace", "request-id", "util"] }
+tower-http = { version = "0.6.2", features = ["trace", "request-id", "util"] }
 problemdetails = { version = "0.4.1", features = ["axum"] }
 
 # db
@@ -32,10 +32,10 @@ sqlx = { version = "0.8.2", features = [
 ] }
 
 # serde
-serde = { version = "1.0.214", features = ["derive"] }
+serde = { version = "1.0.215", features = ["derive"] }
 serde_with = { version = "3.11.0" }
 serde-aux = { version = "4.5.0" }
-serde_json = { version = "1.0.132" }
+serde_json = { version = "1.0.133" }
 
 # tracing
 tracing = { version = "0.1.40" }
@@ -50,8 +50,8 @@ jsonwebtoken = { version = "9.3.0" }
 validator = { version = "0.19.0" }
 
 # errors
-thiserror = { version = "1.0.68" }
-anyhow = { version = "1.0.92" }
+thiserror = { version = "2.0.3" }
+anyhow = { version = "1.0.93" }
 
 # utils
 chrono = { version = "0.4.38", features = ["serde"] }
@@ -64,6 +64,6 @@ once_cell = { version = "1.20.2" }
 [dev-dependencies]
 reqwest = { version = "0.12.9", features = ["json"] }
 claim = { version = "0.5.0" }
-fake = { version = "3.0.0" }
+fake = { version = "3.0.1" }
 quickcheck = { version = "1.0.3" }
 quickcheck_macros = { version = "1.0.0" }
