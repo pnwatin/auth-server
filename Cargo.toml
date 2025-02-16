@@ -14,16 +14,16 @@ name = "auth-server"
 
 [dependencies]
 # tokio
-tokio = { version = "1.41.1", features = ["full"] }
+tokio = { version = "1.43.0", features = ["full"] }
 
 # http
-axum = { version = "0.7.9", features = ["tracing", "tokio"] }
-tower = { version = "0.5.1" }
+axum = { version = "0.8.1", features = ["tracing", "tokio"] }
+tower = { version = "0.5.2" }
 tower-http = { version = "0.6.2", features = ["trace", "request-id", "util"] }
-problemdetails = { version = "0.4.1", features = ["axum"] }
+problemdetails = { version = "0.5.0", features = ["axum"] }
 
 # db
-sqlx = { version = "0.8.2", features = [
+sqlx = { version = "0.8.3", features = [
   "runtime-tokio-rustls",
   "macros",
   "postgres",
@@ -32,38 +32,38 @@ sqlx = { version = "0.8.2", features = [
 ] }
 
 # serde
-serde = { version = "1.0.215", features = ["derive"] }
-serde_with = { version = "3.11.0" }
-serde-aux = { version = "4.5.0" }
-serde_json = { version = "1.0.133" }
+serde = { version = "1.0.217", features = ["derive"] }
+serde_with = { version = "3.12.0" }
+serde-aux = { version = "4.6.0" }
+serde_json = { version = "1.0.138" }
 
 # tracing
-tracing = { version = "0.1.40" }
-tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+tracing = { version = "0.1.41" }
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 tracing-log = { version = "0.2.0" }
 
 # crypto
 argon2 = { version = "0.5.3", features = ["std"] }
-jsonwebtoken = { version = "9.3.0" }
+jsonwebtoken = { version = "9.3.1" }
 
 # validations
-validator = { version = "0.19.0" }
+validator = { version = "0.20.0" }
 
 # errors
-thiserror = { version = "2.0.3" }
-anyhow = { version = "1.0.93" }
+thiserror = { version = "2.0.11" }
+anyhow = { version = "1.0.95" }
 
 # utils
-chrono = { version = "0.4.38", features = ["serde"] }
-config = { version = "0.14.1" }
+chrono = { version = "0.4.39", features = ["serde"] }
+config = { version = "0.15.8" }
 secrecy = { version = "0.10.3", features = ["serde"] }
 uuid = { version = "1.11.0", features = ["v4", "serde"] }
 rand = { version = "0.8.5", features = ["std_rng"] }
 once_cell = { version = "1.20.2" }
 
 [dev-dependencies]
-reqwest = { version = "0.12.9", features = ["json"] }
+reqwest = { version = "0.12.12", features = ["json"] }
 claim = { version = "0.5.0" }
-fake = { version = "3.0.1" }
+fake = { version = "4.0.0" }
 quickcheck = { version = "1.0.3" }
 quickcheck_macros = { version = "1.0.0" }

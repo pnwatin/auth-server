@@ -1,7 +1,6 @@
 use std::{error::Error, net::SocketAddr};
 
 use axum::{
-    async_trait,
     extract::{rejection::JsonRejection, ConnectInfo, FromRequest, FromRequestParts, Request},
     http::header::USER_AGENT,
     response::IntoResponse,
@@ -11,7 +10,6 @@ use serde::Serialize;
 
 pub struct Json<T>(pub T);
 
-#[async_trait]
 impl<S, T> FromRequest<S> for Json<T>
 where
     axum::Json<T>: FromRequest<S, Rejection = JsonRejection>,
@@ -54,7 +52,6 @@ pub struct RequestMetadata {
     pub user_agent: Option<String>,
 }
 
-#[async_trait]
 impl<S> FromRequestParts<S> for RequestMetadata
 where
     S: Send + Sync,
