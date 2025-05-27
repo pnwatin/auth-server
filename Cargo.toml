@@ -14,16 +14,16 @@ name = "auth-server"
 
 [dependencies]
 # tokio
-tokio = { version = "1.43.0", features = ["full"] }
+tokio = { version = "1.45.1", features = ["full"] }
 
 # http
-axum = { version = "0.8.1", features = ["tracing", "tokio"] }
+axum = { version = "0.8.4", features = ["tracing", "tokio"] }
 tower = { version = "0.5.2" }
-tower-http = { version = "0.6.2", features = ["trace", "request-id", "util"] }
-problemdetails = { version = "0.5.0", features = ["axum"] }
+tower-http = { version = "0.6.4", features = ["trace", "request-id", "util"] }
+problemdetails = { version = "0.6.0", features = ["axum"] }
 
 # db
-sqlx = { version = "0.8.3", features = [
+sqlx = { version = "0.8.6", features = [
   "runtime-tokio-rustls",
   "macros",
   "postgres",
@@ -32,10 +32,10 @@ sqlx = { version = "0.8.3", features = [
 ] }
 
 # serde
-serde = { version = "1.0.217", features = ["derive"] }
+serde = { version = "1.0.219", features = ["derive"] }
 serde_with = { version = "3.12.0" }
-serde-aux = { version = "4.6.0" }
-serde_json = { version = "1.0.138" }
+serde-aux = { version = "4.7.0" }
+serde_json = { version = "1.0.140" }
 
 # tracing
 tracing = { version = "0.1.41" }
@@ -50,20 +50,20 @@ jsonwebtoken = { version = "9.3.1" }
 validator = { version = "0.20.0" }
 
 # errors
-thiserror = { version = "2.0.11" }
-anyhow = { version = "1.0.95" }
+thiserror = { version = "2.0.12" }
+anyhow = { version = "1.0.98" }
 
 # utils
-chrono = { version = "0.4.39", features = ["serde"] }
-config = { version = "0.15.8" }
+chrono = { version = "0.4.41", features = ["serde"] }
+config = { version = "0.15.11" }
 secrecy = { version = "0.10.3", features = ["serde"] }
 uuid = { version = "1.11.0", features = ["v4", "serde"] }
 rand = { version = "0.8.5", features = ["std_rng"] }
 once_cell = { version = "1.20.2" }
 
 [dev-dependencies]
-reqwest = { version = "0.12.12", features = ["json"] }
+reqwest = { version = "0.12.15", features = ["json"] }
 claim = { version = "0.5.0" }
-fake = { version = "4.0.0" }
+fake = { version = "4.3.0" }
 quickcheck = { version = "1.0.3" }
-quickcheck_macros = { version = "1.0.0" }
+quickcheck_macros = { version = "1.1.0" }
