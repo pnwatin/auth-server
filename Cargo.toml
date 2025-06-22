@@ -19,7 +19,7 @@ tokio = { version = "1.45.1", features = ["full"] }
 # http
 axum = { version = "0.8.4", features = ["tracing", "tokio"] }
 tower = { version = "0.5.2" }
-tower-http = { version = "0.6.4", features = ["trace", "request-id", "util"] }
+tower-http = { version = "0.6.6", features = ["trace", "request-id", "util"] }
 problemdetails = { version = "0.6.0", features = ["axum"] }
 
 # db
@@ -33,7 +33,7 @@ sqlx = { version = "0.8.6", features = [
 
 # serde
 serde = { version = "1.0.219", features = ["derive"] }
-serde_with = { version = "3.12.0" }
+serde_with = { version = "3.13.0" }
 serde-aux = { version = "4.7.0" }
 serde_json = { version = "1.0.140" }
 
@@ -57,12 +57,12 @@ anyhow = { version = "1.0.98" }
 chrono = { version = "0.4.41", features = ["serde"] }
 config = { version = "0.15.11" }
 secrecy = { version = "0.10.3", features = ["serde"] }
-uuid = { version = "1.11.0", features = ["v4", "serde"] }
+uuid = { version = "1.17.0", features = ["v4", "serde"] }
 rand = { version = "0.8.5", features = ["std_rng"] }
-once_cell = { version = "1.20.2" }
+once_cell = { version = "1.21.3" }
 
 [dev-dependencies]
-reqwest = { version = "0.12.15", features = ["json"] }
+reqwest = { version = "0.12.20", features = ["json"] }
 claim = { version = "0.5.0" }
 fake = { version = "4.3.0" }
 quickcheck = { version = "1.0.3" }
