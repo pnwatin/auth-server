@@ -23,7 +23,7 @@ pub fn auth_router() -> Router {
         )
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AccessTokenClaims {
     pub sub: Uuid,
     pub jit: Uuid,
@@ -31,7 +31,7 @@ pub struct AccessTokenClaims {
     pub exp: i64,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RefreshTokenClaims {
     pub sub: Uuid,
     pub family: Uuid,
@@ -42,7 +42,7 @@ pub struct RefreshTokenClaims {
 
 pub trait Token<T>: Sized
 where
-    T: Serialize + DeserializeOwned,
+    T: Serialize + DeserializeOwned + Clone,
 {
     fn encode(&self) -> Result<String, jsonwebtoken::errors::Error> {
         let token = encode(
