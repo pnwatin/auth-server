@@ -1,5 +1,8 @@
 use anyhow::Context;
-use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
+use argon2::{
+    password_hash::{rand_core::OsRng, SaltString},
+    Argon2, PasswordHasher,
+};
 use axum::{http::StatusCode, response::IntoResponse, Extension};
 use secrecy::{ExposeSecret, SecretString};
 use serde::Deserialize;
@@ -50,7 +53,7 @@ async fn insert_user(
 
 #[tracing::instrument(name = "HASH PASSWORD", skip(password))]
 pub fn hash_password(password: SecretString) -> Result<SecretString, argon2::password_hash::Error> {
-    let password_salt = SaltString::generate(rand::thread_rng());
+    let password_salt = SaltString::generate(&mut OsRng);
     let password_hash = SecretString::from(
         Argon2::default()
             .hash_password(password.expose_secret().as_bytes(), &password_salt)?

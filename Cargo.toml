@@ -58,7 +58,6 @@ chrono = { version = "0.4.42", features = ["serde"] }
 config = { version = "0.15.17" }
 secrecy = { version = "0.10.3", features = ["serde"] }
 uuid = { version = "1.18.1", features = ["v4", "serde"] }
-rand = { version = "0.8.5", features = ["std_rng"] }
 once_cell = { version = "1.21.3" }
 
 [dev-dependencies]
