@@ -128,8 +128,10 @@ impl JWTConfig {
         let secret = jwt_settings.secret.expose_secret().as_bytes();
 
         let keys = JWTKeys {
-            encoding: EncodingKey::from_secret(secret),
-            decoding: DecodingKey::from_secret(secret),
+            encoding: EncodingKey::from_secret(secret)
+                .map_err(|e| config::ConfigError::Message(format!("invalid jwt secret: {e}")))?,
+            decoding: DecodingKey::from_secret(secret)
+                .map_err(|e| config::ConfigError::Message(format!("invalid jwt secret: {e}")))?,
         };
 
         Ok(Self {
